@@ -2381,7 +2381,7 @@ async function callAiOnce(systemPrompt, opts) {
   if (!choice || !choice.message) throw new Error('接口返回异常，请重试');
   const content = typeof choice.message.content === 'string' ? choice.message.content : '';
   if (choice.finish_reason === 'length' || !content.trim()) {
-    if (lenRetry < 2) { await new Promise(r => setTimeout(r, 800 + Math.random() * 600)); continue; }
+    if (lenRetry < 4) { await new Promise(r => setTimeout(r, 1000 + Math.random() * 1200)); continue; }
     throw new Error(content.trim() ? 'AI输出被截断（思考+内容超出max_tokens），请到「设置」调大 max_tokens 或调小每批词数' : 'AI返回了空内容，已重试多次仍失败，请重试');
   }
   return extractAiJson(choice.message);
@@ -2501,10 +2501,7 @@ async function runGrouping(fresh, digest, cp, setStat) {
   const tasks = chunks.map((chunkWords, ci) => async () => {
     if (cp.p1.chunkResults[ci]) return;
     if (batchAbortFlag) throw new Error('已停止');
-    let lastErr = null;
-    for (let a = 0; a < 2; a++) {
-      if (batchAbortFlag) throw new Error('已停止');
-        const sys = `你是公考行测言语理解「逻辑填空」易混词辨析专家，熟悉历年真题高频易混词考点。
+    const buildPrompt = (seg) => `你是公考行测言语理解「逻辑填空」易混词辨析专家，熟悉历年真题高频易混词考点。
 
 任务：从「本批词语」中找出互为易混词的词，输出易混关系对。只找关系，不写释义。
 
@@ -2525,23 +2522,38 @@ ${digestLine}
 ${crossLine}
 
 本批词语（重点分析这些）：
-${chunkWords.join('、')}`;
-        try {
-          const res = await callAiOnce(sys, { maxTokens: 16384, temperature: 0.2 });
-          cp.p1.chunkResults[ci] = { pairs: Array.isArray(res.pairs) ? res.pairs : [], lib: res.lib || {} };
-          saveBatchCheckpoint(cp);
-          return;
-        } catch (eFilter) {
-          if (String(eFilter.message || eFilter).includes('内容安全过滤') || String(eFilter.message || eFilter).includes('截断') || String(eFilter.message || eFilter).includes('空内容')) {
-            // 内容安全过滤：本批跳过 AI 配对，词语将以单词语/独立组形式进入后续阶段
-            cp.p1.chunkResults[ci] = { pairs: [], lib: {} };
-            saveBatchCheckpoint(cp);
+${seg.join('、')}`;
+    const record = (res) => {
+      const cur = cp.p1.chunkResults[ci] = cp.p1.chunkResults[ci] || { pairs: [], lib: {} };
+      if (Array.isArray(res.pairs)) cur.pairs.push(...res.pairs);
+      if (res.lib && typeof res.lib === 'object') Object.assign(cur.lib, res.lib);
+      saveBatchCheckpoint(cp);
+    };
+    const runSeg = async (seg, depth) => {
+      if (batchAbortFlag) throw new Error('已停止');
+      try {
+        const res = await callAiOnce(buildPrompt(seg), { maxTokens: 16384, temperature: 0.2 });
+        record(res);
+        return;
+      } catch (e) {
+        const msg = String(e.message || e);
+        if (msg.includes('内容安全过滤') || msg.includes('截断') || msg.includes('空内容')) {
+          // 随机性过滤/截断：拆半重试（批越小越容易通过），拆到 6 词以下仍失败才放弃配对
+          if (seg.length > 6 && depth < 3) {
+            setStat(`阶段1/3 第 ${ci + 1} 批触发内容过滤/截断，拆半重试（${seg.length} 词）……`);
+            const mid = Math.ceil(seg.length / 2);
+            await runSeg(seg.slice(0, mid), depth + 1);
+            await runSeg(seg.slice(mid), depth + 1);
             return;
           }
-          lastErr = eFilter;
+          cp.p1.chunkResults[ci] = cp.p1.chunkResults[ci] || { pairs: [], lib: {} };
+          saveBatchCheckpoint(cp);
+          return;
         }
+        throw e;
       }
-    throw lastErr;
+    };
+    await runSeg(chunkWords, 0);
   });
 
   await runPool(6, tasks, (done) => {
