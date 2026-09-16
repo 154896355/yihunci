@@ -204,6 +204,10 @@ def run(words_text, lib):
             return
         except ContentFilterError:
             print('  第%d批触发内容安全过滤，二分隔离敏感词…' % (ci + 1))
+        except RuntimeError as e:
+            if '截断或空内容' not in str(e):
+                raise
+            print('  第%d批持续截断/空内容，二分隔离…' % (ci + 1))
 
         def bisect(seg):
             if len(seg) == 1:
@@ -214,12 +218,16 @@ def run(words_text, lib):
             try:
                 res = call_once(build_group_prompt(seg[:mid]), 16384)
                 record_group(ci, res)
-            except ContentFilterError:
+            except (ContentFilterError, RuntimeError) as e:
+                if isinstance(e, RuntimeError) and '截断或空内容' not in str(e):
+                    raise
                 bisect(seg[:mid])
             try:
                 res = call_once(build_group_prompt(seg[mid:]), 16384)
                 record_group(ci, res)
-            except ContentFilterError:
+            except (ContentFilterError, RuntimeError) as e:
+                if isinstance(e, RuntimeError) and '截断或空内容' not in str(e):
+                    raise
                 bisect(seg[mid:])
 
         bisect(chunk)
@@ -314,6 +322,11 @@ def run(words_text, lib):
             except ContentFilterError:
                 print('  定向合并第%d轮触发内容安全过滤，跳过该轮' % (si + 1))
                 continue
+            except RuntimeError as e:
+                if '截断或空内容' not in str(e):
+                    raise
+                print('  定向合并第%d轮持续截断，跳过该轮' % (si + 1))
+                continue
             def idx_of(tag):
                 m = re.match(r'^G(\d+)$', str(tag or '').strip())
                 if not m:
@@ -377,6 +390,11 @@ def run(words_text, lib):
                                      'lib': res.get('lib', {}) if isinstance(res, dict) else {}}
             except ContentFilterError:
                 print('  审计片%d触发内容安全过滤，跳过该片（组保持原样）' % (si + 1))
+                audit_results[si] = {'merges': [], 'lib': {}}
+            except RuntimeError as e:
+                if '截断或空内容' not in str(e):
+                    raise
+                print('  审计片%d持续截断/空内容，跳过该片' % (si + 1))
                 audit_results[si] = {'merges': [], 'lib': {}}
 
         print('[阶段2/3] 归并审计：%d 片（6并发）' % len(slices))
@@ -471,6 +489,12 @@ keyPoint 合格示范（照这个水准写）：
             res = call_once(sys_p, max(4096, min(8192, wc * 260 + 2500)), 0.3)
         except ContentFilterError:
             print('  补全批%d触发内容安全过滤，该批内容留空（词仍导入）' % (bi + 1))
+            fill_results[bi] = []
+            return
+        except RuntimeError as e:
+            if '截断或空内容' not in str(e):
+                raise
+            print('  补全批%d持续截断/空内容，该批内容留空' % (bi + 1))
             fill_results[bi] = []
             return
         glist = res.get('groups', []) if isinstance(res, dict) else []
