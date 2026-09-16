@@ -906,6 +906,17 @@
       <p class="settings-tip">开启后，新导入/新建的词组会自动进入「复习」Tab（今天起开始排期）；关闭则需手动在复习里标记才进入排期。「回到第一组」只重置两个背诵模式的当前位置，不清除已掌握标记。</p>
     </div>
     <div class="settings-section">
+      <h3>云端导入（GitHub）</h3>
+      <div class="form-row">
+        <label>Personal Access Token（需 repo + workflow 权限）</label>
+        <input type="password" id="cloudTokenInput" placeholder="ghp_ 开头，只存在本机浏览器">
+      </div>
+      <div class="form-actions">
+        <button class="btn-secondary" id="cloudSaveBtn">保存并测试连接</button>
+      </div>
+      <p class="settings-tip">用于「云端导入」：把批量导入任务提交到你自己的 GitHub 仓库云端运行，提交后可随意切后台/锁屏/刷抖音，跑完回来点「查询云端任务」即可。token 只存在本机浏览器，不上传任何第三方；手机电脑需分别配置一次。</p>
+    </div>
+    <div class="settings-section">
       <h3>数据管理</h3>
       <div id="storageMeter" style="margin-bottom:12px;">
         <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--ink-soft);margin-bottom:4px;">
@@ -1006,7 +1017,11 @@
     </div>
     <div class="form-actions">
       <button class="btn-primary" id="batchParseBtn">开始解析</button>
+      <button class="btn-secondary" id="cloudImportBtn">云端导入</button>
       <button class="btn-secondary" id="batchStopBtn" style="display:none;">停止</button>
+    </div>
+    <div class="form-actions" id="cloudQueryWrap" style="display:none;">
+      <button class="btn-primary" id="cloudQueryBtn">查询云端任务</button>
     </div>
     <div class="status-msg" id="batchStatusMsg"></div>
     <div class="batch-progress" id="batchProgressWrap">
@@ -3331,6 +3346,135 @@ loadLearnState();
 updateModeUI();
 refreshLearningList();
 saveLearnState();
+
+// ================= 云端导入（GitHub Actions） =================
+function cloudCfg() {
+  try { return JSON.parse(localStorage.getItem('cloud:github') || '{}'); } catch (e) { return {}; }
+}
+function cloudSaveCfg(cfg) {
+  localStorage.setItem('cloud:github', JSON.stringify(cfg));
+}
+async function ghApi(method, path, payload) {
+  const cfg = cloudCfg();
+  const headers = { 'Authorization': 'Bearer ' + cfg.token, 'Accept': 'application/vnd.github+json', 'User-Agent': 'yihunci-app' };
+  const opt = { method, headers };
+  if (payload !== undefined) {
+    headers['Content-Type'] = 'application/json';
+    opt.body = JSON.stringify(payload);
+  }
+  const res = await fetch('https://api.github.com' + path, opt);
+  let body = null;
+  try { body = await res.json(); } catch (e) { body = {}; }
+  return { status: res.status, body };
+}
+function utf8ToB64(str) {
+  return btoa(unescape(encodeURIComponent(str)));
+}
+function b64ToUtf8(b64) {
+  return decodeURIComponent(escape(atob(b64.replace(/\n/g, ''))));
+}
+async function ghPutFile(path, contentText, message) {
+  const cfg = cloudCfg();
+  let sha = null;
+  const ex = await ghApi('GET', '/repos/' + cfg.owner + '/' + cfg.repo + '/contents/' + path);
+  if (ex.status === 200 && ex.body && ex.body.sha) sha = ex.body.sha;
+  const payload = { message, content: utf8ToB64(contentText) };
+  if (sha) payload.sha = sha;
+  const r = await ghApi('PUT', '/repos/' + cfg.owner + '/' + cfg.repo + '/contents/' + path, payload);
+  if (r.status !== 200 && r.status !== 201) throw new Error('推送 ' + path + ' 失败：' + r.status);
+}
+document.getElementById('cloudSaveBtn').addEventListener('click', async () => {
+  const token = document.getElementById('cloudTokenInput').value.trim();
+  if (!token) { alert('请先粘贴 token'); return; }
+  cloudSaveCfg({ token });
+  const btn = document.getElementById('cloudSaveBtn');
+  btn.disabled = true;
+  try {
+    const u = await ghApi('GET', '/user');
+    if (u.status !== 200) throw new Error('token 无效（' + u.status + '）');
+    const owner = u.body.login;
+    const r = await ghApi('GET', '/repos/' + owner + '/yihunci');
+    if (r.status !== 200) throw new Error('仓库 yihunci 不存在或无权访问');
+    cloudSaveCfg({ token, owner, repo: 'yihunci' });
+    alert('连接成功！账号 ' + owner + '，云端导入已就绪。');
+  } catch (e) {
+    alert('连接失败：' + e.message);
+  } finally {
+    btn.disabled = false;
+  }
+});
+document.getElementById('cloudImportBtn').addEventListener('click', async () => {
+  const cfg = cloudCfg();
+  if (!cfg.token || !cfg.owner) { alert('请先到「设置 → 云端导入」配置并保存 token'); return; }
+  const raw = document.getElementById('batchRawText').value.trim();
+  if (!raw) { const s = document.getElementById('batchStatusMsg'); s.textContent = '请先粘贴文本'; s.className = 'status-msg error'; return; }
+  const btn = document.getElementById('cloudImportBtn');
+  btn.disabled = true;
+  const statusEl = document.getElementById('batchStatusMsg');
+  try {
+    statusEl.textContent = '云端导入：上传任务文件……';
+    statusEl.className = 'status-msg';
+    const libSnap = JSON.stringify(customGroups.map(g => ({
+      id: g.id, type: g.type,
+      words: g.words.map(w => ({ term: w.term, meaning: w.meaning, keyPoint: w.keyPoint, example: w.example }))
+    })));
+    await ghPutFile('cloud/words.txt', raw, 'cloud import: words');
+    await ghPutFile('cloud/lib.json', libSnap, 'cloud import: library snapshot');
+    statusEl.textContent = '云端导入：触发云端任务……';
+    const d = await ghApi('POST', '/repos/' + cfg.owner + '/' + cfg.repo + '/actions/workflows/cloud-import.yml/dispatches', { ref: 'main' });
+    if (d.status !== 204) throw new Error('触发失败（' + d.status + '）');
+    cloudImportStartedAt = Date.now();
+    document.getElementById('cloudQueryWrap').style.display = '';
+    statusEl.innerHTML = '✅ 云端任务已提交！服务器正在替你解析（约 15-25 分钟）。\n可以随意切后台/锁屏/刷抖音，完成后回来点「查询云端任务」确认导入。';
+  } catch (e) {
+    statusEl.textContent = '云端提交失败：' + e.message;
+    statusEl.className = 'status-msg error';
+  } finally {
+    btn.disabled = false;
+  }
+});
+let cloudImportStartedAt = 0;
+document.getElementById('cloudQueryBtn').addEventListener('click', async () => {
+  const cfg = cloudCfg();
+  if (!cfg.token || !cfg.owner) { alert('请先到「设置 → 云端导入」配置 token'); return; }
+  const statusEl = document.getElementById('batchStatusMsg');
+  const btn = document.getElementById('cloudQueryBtn');
+  btn.disabled = true;
+  try {
+    statusEl.textContent = '查询云端任务状态……';
+    statusEl.className = 'status-msg';
+    const r = await ghApi('GET', '/repos/' + cfg.owner + '/' + cfg.repo + '/actions/workflows/cloud-import.yml/runs?per_page=1');
+    const run = r.body && r.body.workflow_runs && r.body.workflow_runs[0];
+    if (!run) { statusEl.textContent = '还没有云端任务记录，请先点「云端导入」提交。'; return; }
+    if (run.status !== 'completed') {
+      const mins = Math.round((Date.now() - new Date(run.created_at).getTime()) / 60000);
+      statusEl.textContent = '云端任务进行中（已约 ' + mins + ' 分钟）……服务器在替你跑，随便干别的去，过几分钟再点查询。';
+      return;
+    }
+    if (run.conclusion !== 'success') {
+      statusEl.innerHTML = '❌ 云端任务失败（' + run.conclusion + '）。<a href="' + run.html_url + '" target="_blank">查看运行日志</a>，修正后可重新提交。';
+      return;
+    }
+    statusEl.textContent = '云端任务完成，拉取结果……';
+    const rf = await ghApi('GET', '/repos/' + cfg.owner + '/' + cfg.repo + '/contents/cloud/result.json');
+    if (rf.status !== 200) { statusEl.textContent = '结果文件缺失（可能被其他操作清除），请重新提交。'; return; }
+    const parsed = JSON.parse(b64ToUtf8(rf.body.content));
+    batchParsedResult = parsed.result || [];
+    if (!batchParsedResult.length) { statusEl.textContent = '云端结果为空（可能全部词语词库已存在）。'; return; }
+    renderBatchPreview(batchParsedResult);
+    document.getElementById('batchPreviewWrap').classList.add('open');
+    document.getElementById('cloudQueryWrap').style.display = 'none';
+    statusEl.textContent = '云端解析完成：共 ' + batchParsedResult.length + ' 组' + (parsed.skipped ? '（词库已有 ' + parsed.skipped + ' 词自动跳过）' : '') + '，请确认后导入';
+  } catch (e) {
+    statusEl.textContent = '查询失败：' + e.message;
+    statusEl.className = 'status-msg error';
+  } finally {
+    btn.disabled = false;
+  }
+});
+// 打开弹窗时同步云端按钮状态
+const _origBatchOpen = document.getElementById('batchImportBtn').addEventListener;
+
 </script>
 </body>
 </html>
