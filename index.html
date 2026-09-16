@@ -2383,6 +2383,9 @@ async function callAiOnce(systemPrompt, opts) {
       if (++attempt > 3) throw new Error('接口调用失败：' + res.status + ' ' + errText.slice(0, 120));
       continue;
     }
+    if (low.includes('1301') || low.includes('contentfilter') || low.includes('敏感内容')) {
+      throw new Error('内容安全过滤：这批词语中有内容被智谱判定为敏感，已自动跳过');
+    }
     if (low.includes('max_tokens') || low.includes('maximum context') || low.includes('context length') || (low.includes('token') && low.includes('limit'))) {
       throw new Error('请求失败：token 超出模型上限，请到「设置」调小每批词数或 max_tokens');
     }
@@ -2516,7 +2519,6 @@ async function runGrouping(fresh, digest, cp, setStat) {
     let lastErr = null;
     for (let a = 0; a < 2; a++) {
       if (batchAbortFlag) throw new Error('已停止');
-      try {
         const sys = `你是公考行测言语理解「逻辑填空」易混词辨析专家，熟悉历年真题高频易混词考点。
 
 任务：从「本批词语」中找出互为易混词的词，输出易混关系对。只找关系，不写释义。
@@ -2539,12 +2541,21 @@ ${crossLine}
 
 本批词语（重点分析这些）：
 ${chunkWords.join('、')}`;
-        const res = await callAiOnce(sys, { maxTokens: 16384, temperature: 0.2 });
-        cp.p1.chunkResults[ci] = { pairs: Array.isArray(res.pairs) ? res.pairs : [], lib: res.lib || {} };
-        saveBatchCheckpoint(cp);
-        return;
-      } catch(e) { lastErr = e; }
-    }
+        try {
+          const res = await callAiOnce(sys, { maxTokens: 16384, temperature: 0.2 });
+          cp.p1.chunkResults[ci] = { pairs: Array.isArray(res.pairs) ? res.pairs : [], lib: res.lib || {} };
+          saveBatchCheckpoint(cp);
+          return;
+        } catch (eFilter) {
+          if (String(eFilter.message || eFilter).includes('内容安全过滤') || String(eFilter.message || eFilter).includes('截断') || String(eFilter.message || eFilter).includes('空内容')) {
+            // 内容安全过滤：本批跳过 AI 配对，词语将以单词语/独立组形式进入后续阶段
+            cp.p1.chunkResults[ci] = { pairs: [], lib: {} };
+            saveBatchCheckpoint(cp);
+            return;
+          }
+          lastErr = eFilter;
+        }
+      }
     throw lastErr;
   });
 
@@ -2621,9 +2632,13 @@ ${lines}`;
         res = await callAiOnce(sys, { maxTokens: 4096, temperature: 0.2 });
         lastErr = null;
         break;
-      } catch (e) { lastErr = e; }
+      } catch (e) {
+        if (String(e.message || e).includes('内容安全过滤') || String(e.message || e).includes('截断') || String(e.message || e).includes('空内容')) { setStat('定向合并一轮触发内容过滤/持续截断，跳过该轮'); res = null; lastErr = null; break; }
+        lastErr = e;
+      }
     }
     if (lastErr) throw lastErr;
+    if (!res) continue;
     const idxOf = (tag) => {
       const m = /^G(\d+)$/.exec(String(tag || '').trim());
       if (!m) return -1;
@@ -2672,7 +2687,6 @@ async function runAudit(groups, cp, setStat) {
     let lastErr = null;
     for (let a = 0; a < 2; a++) {
       if (batchAbortFlag) throw new Error('已停止');
-      try {
         const sys = `你是公考行测言语理解「逻辑填空」易混词辨析专家。下面这些小组是自动分组产生的，可能存在：本该同属一个考点的词被拆散在不同组、单词语其实与某组易混、词被放错组。
 
 任务：找出应该合并/纠正的关系，输出关系对。只输出关系，不重组整组。
@@ -2693,12 +2707,20 @@ ${segLines}
 
 词库全部组（lib 的值必须从这里原样复制）：
 ${libAllLine}`;
-        const res = await callAiOnce(sys, { maxTokens: 8192, temperature: 0.2 });
-        cp.p15.sliceResults[si] = { merges: Array.isArray(res.merges) ? res.merges : [], lib: res.lib || {} };
-        saveBatchCheckpoint(cp);
-        return;
-      } catch(e) { lastErr = e; }
-    }
+        try {
+          const res = await callAiOnce(sys, { maxTokens: 8192, temperature: 0.2 });
+          cp.p15.sliceResults[si] = { merges: Array.isArray(res.merges) ? res.merges : [], lib: res.lib || {} };
+          saveBatchCheckpoint(cp);
+          return;
+        } catch (eFilter) {
+          if (String(eFilter.message || eFilter).includes('内容安全过滤') || String(eFilter.message || eFilter).includes('截断') || String(eFilter.message || eFilter).includes('空内容')) {
+            cp.p15.sliceResults[si] = { merges: [], lib: {} };
+            saveBatchCheckpoint(cp);
+            return;
+          }
+          lastErr = eFilter;
+        }
+      }
     throw lastErr;
   });
 
@@ -2801,7 +2823,16 @@ async function runPhase2Fill(entries, cp, setStat) {
         delete cp.p2.errors[bi];
         saveBatchCheckpoint(cp);
         return;
-      } catch(e) { lastErr = e; }
+      } catch(e) {
+        if (String(e.message || e).includes('内容安全过滤') || String(e.message || e).includes('截断') || String(e.message || e).includes('空内容')) {
+          // 内容安全过滤：该批词语仍导入，但释义/考点/例句留空（可手动补）
+          results[bi] = [];
+          delete cp.p2.errors[bi];
+          saveBatchCheckpoint(cp);
+          return;
+        }
+        lastErr = e;
+      }
     }
     cp.p2.errors[bi] = String((lastErr && lastErr.message) || lastErr);
     saveBatchCheckpoint(cp);
