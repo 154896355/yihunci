@@ -23,6 +23,10 @@ MODEL = os.environ.get('ZHIPU_MODEL', 'glm-5.3-flash')
 MAXF = float('inf')
 
 
+class ContentFilterError(Exception):
+    pass
+
+
 def call_once(sys_prompt, max_tokens, temperature=0.2, attempts=4):
     body = {
         'model': MODEL,
@@ -60,8 +64,10 @@ def call_once(sys_prompt, max_tokens, temperature=0.2, attempts=4):
                 raise
         except urllib.error.HTTPError as e:
             code = e.code
-            txt = e.read().decode('utf-8', 'replace')[:200]
+            txt = e.read().decode('utf-8', 'replace')[:300]
             last = 'HTTP%d %s' % (code, txt)
+            if '1301' in txt or 'contentFilter' in txt or '敏感内容' in txt:
+                raise ContentFilterError('内容安全过滤: ' + txt[:120])
             if code in (429, 500, 502, 503) and i < attempts - 1:
                 time.sleep(3 * (i + 1))
                 continue
@@ -188,8 +194,37 @@ def run(words_text, lib):
     chunks = [fresh[i:i + 40] for i in range(0, len(fresh), 40)]
     chunk_results = {}
 
+    filtered_words = set()
+
     def group_one(ci):
         chunk = chunks[ci]
+        try:
+            res = call_once(build_group_prompt(chunk), 16384)
+            record_group(ci, res)
+            return
+        except ContentFilterError:
+            print('  第%d批触发内容安全过滤，二分隔离敏感词…' % (ci + 1))
+
+        def bisect(seg):
+            if len(seg) == 1:
+                filtered_words.add(seg[0])
+                print('    已隔离敏感词:', seg[0])
+                return
+            mid = len(seg) // 2
+            try:
+                res = call_once(build_group_prompt(seg[:mid]), 16384)
+                record_group(ci, res)
+            except ContentFilterError:
+                bisect(seg[:mid])
+            try:
+                res = call_once(build_group_prompt(seg[mid:]), 16384)
+                record_group(ci, res)
+            except ContentFilterError:
+                bisect(seg[mid:])
+
+        bisect(chunk)
+
+    def build_group_prompt(chunk):
         rule5 = ('5. 「本次任务其他批次的词」里若有与本批词易混的，也可以直接组成 pair（跨批配对，词面原样复制）。'
                  if cross_batch else
                  '5. 只对本批词语配对；与其他批次词语的易混关系交由随后的定向合并阶段统一处理。')
@@ -216,11 +251,17 @@ def run(words_text, lib):
 
 本批词语（重点分析这些）：
 ''' + '、'.join(chunk)
-        res = call_once(sys_p, 16384)
-        chunk_results[ci] = {'pairs': res.get('pairs', []) if isinstance(res, dict) else [],
-                             'lib': res.get('lib', {}) if isinstance(res, dict) else {}}
+        return sys_p
 
     print('[阶段1/3] 关系分组：%d 批（6并发）' % len(chunks))
+    def record_group(ci, res):
+        cur = chunk_results.setdefault(ci, {'pairs': [], 'lib': {}})
+        if isinstance(res, dict):
+            cur['pairs'].extend(res.get('pairs', []))
+            lib = res.get('lib', {})
+            if isinstance(lib, dict):
+                cur['lib'].update(lib)
+
     prog = {'done': 0}
     pool_run(6, [(lambda ci=ci: group_one(ci)) for ci in range(len(chunks))],
              lambda d: print('  分组 %d/%d' % (d, len(chunks))))
@@ -268,7 +309,11 @@ def run(words_text, lib):
 
 小组清单：
 ''' % len(seg) + lines
-            res = call_once(sys_p, 4096)
+            try:
+                res = call_once(sys_p, 4096)
+            except ContentFilterError:
+                print('  定向合并第%d轮触发内容安全过滤，跳过该轮' % (si + 1))
+                continue
             def idx_of(tag):
                 m = re.match(r'^G(\d+)$', str(tag or '').strip())
                 if not m:
@@ -326,9 +371,13 @@ def run(words_text, lib):
 
 词库全部组（lib 的值必须从这里原样复制）：
 ''' + lib_all
-            res = call_once(sys_p, 8192)
-            audit_results[si] = {'merges': res.get('merges', []) if isinstance(res, dict) else [],
-                                 'lib': res.get('lib', {}) if isinstance(res, dict) else {}}
+            try:
+                res = call_once(sys_p, 8192)
+                audit_results[si] = {'merges': res.get('merges', []) if isinstance(res, dict) else [],
+                                     'lib': res.get('lib', {}) if isinstance(res, dict) else {}}
+            except ContentFilterError:
+                print('  审计片%d触发内容安全过滤，跳过该片（组保持原样）' % (si + 1))
+                audit_results[si] = {'merges': [], 'lib': {}}
 
         print('[阶段2/3] 归并审计：%d 片（6并发）' % len(slices))
         pool_run(6, [(lambda si=si: audit_one(si)) for si in range(len(slices))],
@@ -418,7 +467,12 @@ keyPoint 合格示范（照这个水准写）：
 
 待填写词组：
 ''' + listing
-        res = call_once(sys_p, max(4096, min(8192, wc * 260 + 2500)), 0.3)
+        try:
+            res = call_once(sys_p, max(4096, min(8192, wc * 260 + 2500)), 0.3)
+        except ContentFilterError:
+            print('  补全批%d触发内容安全过滤，该批内容留空（词仍导入）' % (bi + 1))
+            fill_results[bi] = []
+            return
         glist = res.get('groups', []) if isinstance(res, dict) else []
         fill_results[bi] = glist
 
@@ -444,7 +498,7 @@ keyPoint 合格示范（照这个水准写）：
             result.append({'type': e['type'], 'words': words, 'matchTargetGroupId': e['libTargetId']})
 
     print('完成：%d 组，跳过 %d 词' % (len(result), len(skipped)))
-    return {'result': result, 'skipped': len(skipped)}
+    return {'result': result, 'skipped': len(skipped), 'filtered': sorted(filtered_words)}
 
 
 if __name__ == '__main__':
