@@ -1,0 +1,3268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="易混词背诵">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+<link rel="manifest" href='data:application/manifest+json,{"name":"易混词背诵","short_name":"易混词","start_url":".","display":"standalone","background_color":"#ffffff","theme_color":"#ffffff","icons":[{"src":"data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22%3E%3Crect width=%22128%22 height=%22128%22 rx=%2224%22 fill=%22%231A1A1A%22/%3E%3Ctext x=%2264%22 y=%2282%22 font-size=%2262%22 text-anchor=%22middle%22 fill=%22%23FFFFFF%22 font-family=%22serif%22%3E易%3C/text%3E%3C/svg%3E","sizes":"any","type":"image/svg+xml"}]}'>
+<title>易混词背诵</title>
+<style>
+  :root {
+    --paper: #ffffff;
+    --paper-raised: #fafafa;
+    --ink: #1a1a1a;
+    --ink-soft: #5a5a5a;
+    --seal: #1a1a1a;
+    --seal-soft: #5a5a5a;
+    --rule: #f0f0f0;
+    --jade: #5a5a5a;
+    --ink-faint: #c0c0c0;
+    --ink-mid: #a8a8a8;
+    --ai-blue: #3c5a99;
+    --tab-height: 46px;
+  }
+  /* 暗色模式：跟随 html[data-theme="dark"] 或系统偏好（无显式设置时） */
+  html[data-theme="dark"] {
+    --paper: #17181a;
+    --paper-raised: #202225;
+    --ink: #e8e8e8;
+    --ink-soft: #a8a8a8;
+    --seal: #e8e8e8;
+    --seal-soft: #a8a8a8;
+    --rule: #33363a;
+    --jade: #8aa892;
+    --ink-faint: #6a6f74;
+    --ink-mid: #9aa0a5;
+    --ai-blue: #4a6dae;
+  }
+  @media (prefers-color-scheme: dark) {
+    html:not([data-theme="light"]):not([data-theme="dark"]) {
+      --paper: #17181a;
+      --paper-raised: #202225;
+      --ink: #e8e8e8;
+      --ink-soft: #a8a8a8;
+      --seal: #e8e8e8;
+      --seal-soft: #a8a8a8;
+      --rule: #33363a;
+      --jade: #8aa892;
+      --ink-faint: #6a6f74;
+      --ink-mid: #9aa0a5;
+      --ai-blue: #4a6dae;
+    }
+  }
+  html[data-theme="dark"] .mini-btn.active,
+  html[data-theme="dark"] .mode-switch-btn.active { background: var(--seal); color: var(--paper); }
+  html[data-theme="dark"] .type-tag { color: var(--paper); }
+  html[data-theme="dark"] .srs-done { filter: invert(1); }
+  html[data-theme="dark"] img, html[data-theme="dark"] .seal-stamp { filter: none; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--paper); color: var(--ink); }
+  body {
+    font-family: "PingFang SC", "Noto Sans SC", "Microsoft YaHei", -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+    padding-bottom: calc(var(--tab-height) + 10px + env(safe-area-inset-bottom, 0px));
+  }
+  .serif { font-family: "Noto Serif SC", "Songti SC", "SimSun", serif; }
+  .app { max-width: 640px; margin: 0 auto; }
+  .view { display: none; padding: 10px 14px 16px; }
+  .view.active { display: block; }
+
+  /* 底部导航 */
+  .tab-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    height: calc(var(--tab-height) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: var(--paper-raised);
+    border-top: 1px solid var(--rule);
+    display: flex; z-index: 90;
+  }
+  .tab-bar-inner {
+    max-width: 640px; margin: 0 auto;
+    width: 100%; height: 100%; display: flex;
+  }
+  .tab-btn {
+    flex: 1; height: 100%;
+    background: none; border: none;
+    font-family: inherit; font-size: 11px;
+    color: var(--ink-soft); cursor: pointer;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 1px;
+  }
+  .tab-btn.active { color: var(--seal); font-weight: 600; }
+  .tab-btn .icon { font-size: 16px; line-height: 1; }
+
+  /* ========== 学习视图 ========== */
+  .mode-switch {
+    display: flex; border: 1px solid var(--rule);
+    border-radius: 5px; overflow: hidden; margin-bottom: 8px;
+  }
+  .mode-switch-btn {
+    flex: 1; padding: 7px 4px; border: none;
+    background: var(--paper-raised); color: var(--ink-soft);
+    font-size: 13px; font-family: inherit; cursor: pointer;
+  }
+  .mode-switch-btn + .mode-switch-btn { border-left: 1px solid var(--rule); }
+  .mode-switch-btn.active { background: var(--jade); color: #fff; font-weight: 600; }
+  .learning-toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px; margin-bottom: 8px; flex-wrap: wrap;
+  }
+  .learning-progress { font-size: 13px; color: var(--ink-soft); }
+  .learning-tool-group { display: flex; gap: 6px; }
+  .mini-btn {
+    font-size: 12px; border: 1px solid var(--rule);
+    background: var(--paper-raised); color: var(--ink);
+    padding: 3px 9px; border-radius: 4px; cursor: pointer;
+    font-family: inherit;
+  }
+  .mini-btn.active { background: var(--seal); border-color: var(--seal); color: #fff; }
+  .learning-group-title {
+    font-size: 13px; color: var(--ink-soft);
+    margin-bottom: 8px; display: flex; align-items: center; gap: 8px;
+  }
+  .type-tag {
+    font-size: 10.5px; padding: 2px 7px; border-radius: 3px;
+    color: #fff; white-space: nowrap;
+  }
+  .type-tag.idiom { background: var(--seal); }
+  .type-tag.word { background: var(--jade); }
+  .learning-word-card {
+    background: var(--paper-raised);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 10px 12px 12px;
+    margin-bottom: 9px;
+  }
+  .word-term {
+    font-size: 17px; font-weight: 700;
+    font-family: "Noto Serif SC", "Songti SC", "SimSun", serif;
+    margin-bottom: 4px;
+  }
+  .word-meaning {
+    font-size: 13.5px; line-height: 1.6; margin-bottom: 6px;
+  }
+  .key-point {
+    border-left: 3px solid var(--seal);
+    padding: 3px 0 3px 9px; margin-bottom: 6px;
+  }
+  .key-point .label {
+    font-size: 10.5px; font-weight: 700; color: var(--seal);
+    letter-spacing: 0.03em; margin-bottom: 2px;
+  }
+  .key-point .text { font-size: 13px; line-height: 1.6; }
+  .word-example { font-size: 12.5px; color: var(--ink-soft); line-height: 1.55; }
+  .learning-nav {
+    position: fixed; left: 0; right: 0;
+    bottom: calc(var(--tab-height) + env(safe-area-inset-bottom, 0px) + 10px);
+    z-index: 90;
+    display: flex; gap: 10px;
+    max-width: 640px; margin: 0 auto;
+    padding: 0 14px;
+    pointer-events: none;
+  }
+  /* 内容容器底部预留悬浮按钮高度，避免最后一张卡片文字被遮挡 */
+  #learningContent, #reviewContent {
+    padding-bottom: calc(var(--tab-height) + 62px + env(safe-area-inset-bottom, 0px));
+  }
+  /* 复习阶段状态条（学习页/复习页顶部） */
+  .srs-strip {
+    font-size: 12px;
+    color: var(--ink-soft);
+    background: var(--paper-raised);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 7px 12px;
+    margin-bottom: 10px;
+  }
+  .nav-btn {
+    pointer-events: auto;
+    flex: 1; height: 46px;
+    border-radius: 23px; font-size: 14.5px;
+    font-family: inherit; cursor: pointer;
+    border: 1px solid var(--rule);
+    background: rgba(251,248,240,0.92);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    color: var(--ink);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.10);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .nav-btn:active { opacity: 0.75; }
+  .nav-btn.primary { background: var(--seal); border-color: var(--seal); color: #fff; font-weight: 600; }
+  .nav-btn.jade { background: var(--jade); border-color: var(--jade); color: #fff; }
+  .nav-btn.mastered { background: #B8860B; border-color: #B8860B; color: #fff; }
+  .nav-btn:disabled { opacity: 0.4; cursor: default; box-shadow: none; }
+  .learning-empty {
+    text-align: center; padding: 28px 14px;
+    color: var(--ink-soft); font-size: 13.5px;
+  }
+
+  /* ========== 词库视图 ========== */
+  .library-toolbar { display: flex; gap: 8px; margin-bottom: 7px; flex-wrap: wrap; }
+  .library-quick-actions {
+    display: flex; gap: 6px; margin-bottom: 7px; flex-wrap: wrap;
+  }
+  .library-quick-actions .action-btn,
+  .library-quick-actions .batch-btn {
+    flex: 1; min-width: 0; padding: 7px 4px;
+    border-radius: 4px; border: 1px solid var(--rule);
+    background: var(--paper-raised); color: var(--ink);
+    font-size: 12px; cursor: pointer; font-family: inherit;
+    white-space: nowrap; text-align: center;
+  }
+  .library-quick-actions .action-btn.primary { background: var(--seal); border-color: var(--seal); color: #fff; font-weight: 600; }
+  .library-quick-actions .action-btn.ai { background: #3c5a99; border-color: #3c5a99; color: #fff; }
+  .search-box {
+    flex: 1; min-width: 150px;
+    border: 1px solid var(--rule); border-radius: 4px;
+    background: var(--paper-raised);
+  }
+  .search-box input {
+    width: 100%; border: none; background: transparent;
+    padding: 7px 11px; font-size: 14px;
+    color: var(--ink); font-family: inherit;
+  }
+  .search-box input:focus { outline: none; }
+  .search-box input::placeholder { color: var(--ink-soft); }
+  .type-tabs {
+    display: flex; border: 1px solid var(--rule);
+    border-radius: 4px; overflow: hidden;
+  }
+  .type-tab {
+    padding: 6px 10px; border: none;
+    background: var(--paper-raised); color: var(--ink-soft);
+    font-size: 12.5px; cursor: pointer; font-family: inherit;
+    border-right: 1px solid var(--rule);
+  }
+  .type-tab:last-child { border-right: none; }
+  .type-tab.active { background: var(--seal); color: #fff; font-weight: 600; }
+  .batch-btn {
+    padding: 7px 10px; border: 1px solid var(--rule);
+    background: var(--paper-raised); color: var(--ink);
+    font-size: 12.5px; cursor: pointer; font-family: inherit;
+    border-radius: 4px;
+  }
+  .batch-btn.danger { color: var(--seal); border-color: var(--seal); }
+  .batch-actions {
+    display: none; gap: 8px; align-items: center;
+    margin-bottom: 7px;
+  }
+  .batch-actions.show { display: flex; }
+  .batch-actions .batch-btn { flex: 1; min-width: 0; text-align: center; white-space: nowrap; }
+
+  .group-list { margin-top: 3px; }
+  .group-item { border-bottom: 1px solid var(--rule); position: relative; padding-left: 0; transition: padding-left 0.15s ease; }
+  .group-list.batch-mode .group-item { padding-left: 30px; }
+  .batch-checkbox {
+    position: absolute; left: 4px; top: 13px;
+    width: 17px; height: 17px;
+    display: none; cursor: pointer;
+  }
+  .group-list.batch-mode .batch-checkbox { display: block; }
+  .group-head {
+    display: flex; align-items: center; justify-content: space-between;
+    width: 100%; background: none; border: none; text-align: left;
+    padding: 10px 22px 10px 1px; cursor: pointer; font-family: inherit; gap: 10px;
+  }
+  .group-head .terms { font-size: 15.5px; color: var(--ink); line-height: 1.4; }
+  .group-head .terms .sep { color: var(--ink-soft); margin: 0 6px; font-family: "PingFang SC", sans-serif; }
+  .group-head .meta { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .chevron { color: var(--ink-soft); font-size: 12px; transition: transform 0.15s ease; flex-shrink: 0; }
+  .group-item.open .chevron { transform: rotate(90deg); }
+  .group-body { display: none; padding: 2px 1px 10px; }
+  .group-item.open .group-body { display: block; }
+  .word-block {
+    padding: 7px 0 7px 11px;
+    border-left: 2px solid var(--rule);
+    margin-bottom: 8px;
+  }
+  .word-block:last-child { margin-bottom: 0; }
+  .word-block-head { margin-bottom: 3px; }
+  .empty-state {
+    padding: 20px 10px; text-align: center;
+    color: var(--ink-soft); font-size: 13.5px;
+  }
+  .library-actions {
+    margin-top: 18px; border-top: 1px solid var(--rule);
+    padding-top: 14px;
+    display: flex; gap: 8px; flex-wrap: wrap;
+  }
+  .action-btn {
+    flex: 1; min-width: 110px; padding: 9px 6px;
+    border-radius: 4px; border: 1px solid var(--rule);
+    background: var(--paper-raised); color: var(--ink);
+    font-size: 12.5px; cursor: pointer; font-family: inherit;
+  }
+  .action-btn.primary { background: var(--seal); border-color: var(--seal); color: #fff; font-weight: 600; }
+  .action-btn.ai { background: #3c5a99; border-color: #3c5a99; color: #fff; }
+
+  /* 弹窗 */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.42);
+    display: none; z-index: 99;
+    align-items: center; justify-content: center; padding: 12px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    width: 100%; max-width: 560px; background: var(--paper);
+    border-radius: 6px; border: 1px solid var(--rule);
+    max-height: 90vh; overflow: auto; padding: 14px;
+    position: relative;
+  }
+  .modal-close {
+    position: sticky; top: -14px; float: right;
+    width: 42px; height: 42px;
+    border: none; background: transparent;
+    font-size: 24px; line-height: 1; color: var(--ink-soft);
+    cursor: pointer; font-family: inherit;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 2;
+    flex-shrink: 0;
+  }
+  .modal-close:active { background: rgba(0,0,0,0.08); }
+  .modal-title { margin: 0 0 14px; font-size: 17px; padding-right: 34px; }
+  .btn-primary:disabled, .btn-secondary:disabled { opacity: 0.55; cursor: default; }
+  .form-row { margin-bottom: 11px; }
+  .form-row label {
+    display: block; font-size: 11.5px;
+    color: var(--ink-soft); margin-bottom: 4px;
+  }
+  .form-row input, .form-row select, .form-row textarea {
+    width: 100%; border: 1px solid var(--rule);
+    border-radius: 4px; padding: 9px 10px;
+    font-size: 14px; font-family: inherit;
+    background: var(--paper-raised); color: var(--ink);
+  }
+  .form-row input:focus, .form-row select:focus, .form-row textarea:focus { outline: 1px solid var(--seal-soft); }
+  .form-row textarea { resize: vertical; min-height: 56px; }
+  .form-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .btn-primary, .btn-secondary {
+    flex: 1; min-width: 96px; padding: 10px;
+    border-radius: 4px; font-size: 13.5px;
+    font-family: inherit; cursor: pointer;
+    border: 1px solid var(--rule);
+  }
+  .btn-primary { background: var(--seal); border-color: var(--seal); color: #fff; font-weight: 600; }
+  .btn-secondary { background: var(--paper-raised); color: var(--ink); }
+  .status-msg { font-size: 12px; margin-top: 8px; color: var(--jade); min-height: 16px; }
+  .status-msg.error { color: var(--seal); }
+  .word-form-block {
+    border: 1px solid var(--rule); border-radius: 4px;
+    padding: 11px; margin-bottom: 10px; background: var(--paper-raised);
+  }
+  .word-form-block .wf-title {
+    font-size: 11.5px; font-weight: 700;
+    color: var(--ink-soft); margin-bottom: 8px;
+  }
+  .add-word-link {
+    background: none; border: none; color: var(--seal);
+    font-size: 13px; cursor: pointer;
+    padding: 2px 0 8px; font-family: inherit; display: block;
+  }
+  .ai-loading { font-size: 13px; color: var(--ink-soft); padding: 6px 0; display: none; }
+  .ai-loading.show { display: block; }
+  .ai-result-panel {
+    margin-top: 12px; border: 1px solid var(--rule); border-radius: 4px;
+    padding: 11px; background: var(--paper-raised); display: none;
+  }
+  .ai-result-panel.open { display: block; }
+  .ai-candidate-item {
+    border: 1px solid var(--rule); border-radius: 4px;
+    padding: 9px; margin-bottom: 8px;
+  }
+  .ai-candidate-item:last-child { margin-bottom: 0; }
+  .candidate-title { font-weight: 700; font-size: 13.5px; margin-bottom: 3px; }
+  .candidate-meta { font-size: 11px; color: var(--ink-soft); margin-bottom: 3px; }
+  .candidate-reason { font-size: 12px; margin-bottom: 7px; }
+  .ai-warning { font-size: 12px; color: var(--seal); margin: 6px 0; }
+  .ai-info { font-size: 12px; color: var(--jade); margin: 6px 0; }
+  .ai-btn {
+    padding: 6px 10px; border-radius: 4px; border: 1px solid var(--rule);
+    font-size: 12px; cursor: pointer; font-family: inherit;
+    background: var(--paper-raised); color: var(--ink);
+  }
+  .ai-btn.ok { background: var(--jade); border-color: var(--jade); color: #fff; }
+  .ai-btn.new { background: var(--seal); border-color: var(--seal); color: #fff; }
+  .ai-btn.copy { background: #3c5a99; border-color: #3c5a99; color: #fff; }
+  .batch-preview-wrap {
+    margin-top: 12px; border: 1px solid var(--rule);
+    border-radius: 4px; padding: 10px;
+    background: var(--paper-raised);
+    display: none; flex-direction: column;
+  }
+  .batch-preview-wrap.open { display: flex; }
+  #batchPreviewContent { max-height: 38vh; overflow: auto; }
+  .batch-preview-wrap .form-actions { flex-shrink: 0; margin-top: 10px; }
+  .preview-group-item { border-bottom: 1px dashed var(--rule); padding: 7px 0; }
+  .batch-progress { margin-top: 10px; display: none; }
+  .batch-progress.show { display: block; }
+  .progress-bar { height: 8px; background: var(--rule); border-radius: 4px; overflow: hidden; }
+  .progress-fill { height: 100%; width: 0%; background: var(--jade); transition: width 0.2s ease; }
+  .progress-text { font-size: 12px; color: var(--ink-soft); margin-top: 4px; text-align: center; }
+  .preview-group-item:last-child { border-bottom: none; }
+
+  /* ========== 设置视图 ========== */
+  .settings-section {
+    margin-bottom: 18px; padding-bottom: 14px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .settings-section:last-child { border-bottom: none; }
+  .settings-section h3 {
+    font-size: 15px; margin: 0 0 12px;
+    font-family: "Noto Serif SC", "Songti SC", "SimSun", serif;
+  }
+  .settings-tip {
+    font-size: 11.5px; color: var(--ink-soft);
+    margin-top: 8px; line-height: 1.6;
+  }
+
+  /* ========== 视觉改版 v3：白底黑白灰极简 ========== */
+  html, body { background: var(--paper); }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  }
+  .serif { font-family: inherit; }
+  .view { padding: 0 20px 16px; }
+
+  /* 顶部栏（学习/复习通用） */
+  .app-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 0 12px;
+  }
+  .app-name { font-size: 15px; font-weight: 500; color: var(--ink); }
+  .app-actions { display: flex; gap: 18px; }
+  .app-actions .mini-btn {
+    border: none; background: none; padding: 2px;
+    font-size: 18px; color: var(--ink);
+  }
+  .app-actions .mini-btn i { font-size: 18px; vertical-align: middle; }
+
+  /* 底部导航：白底、图标20px、选中黑 */
+  .tab-bar { background: var(--paper); border-top: 0.5px solid var(--rule); }
+  .tab-btn { color: var(--ink-faint); }
+  .tab-btn.active { color: var(--ink); font-weight: 500; }
+  .tab-btn i { font-size: 20px; line-height: 1; }
+  .tab-btn .icon { font-size: 20px; line-height: 1; }
+
+  /* 学习页：下划线式 Tab 切换 */
+  .mode-switch {
+    border: none; border-radius: 0;
+    gap: 24px; padding: 0 0 10px;
+    border-bottom: 0.5px solid var(--rule);
+  }
+  .mode-switch-btn {
+    flex: 0 0 auto; padding: 4px 2px 8px;
+    background: none; color: var(--ink-faint);
+    font-size: 14px; position: relative;
+  }
+  .mode-switch-btn + .mode-switch-btn { border-left: none; }
+  .mode-switch-btn.active { background: none; color: var(--ink); font-weight: 500; }
+  .mode-switch-btn.active::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: -1px;
+    height: 2px; background: var(--seal);
+  }
+
+  /* 学习页/复习页 组信息行 */
+  .learning-toolbar {
+    margin: 10px 0 0; gap: 6px;
+  }
+  .learning-progress { font-size: 11px; color: var(--ink-faint); line-height: 1.5; }
+  .learning-tool-group { gap: 16px; }
+  .learning-tool-group .mini-btn {
+    border: none; background: none; padding: 3px;
+    color: var(--ink-faint); font-size: 18px;
+  }
+  .learning-tool-group .mini-btn i { font-size: 18px; vertical-align: middle; }
+  .learning-tool-group .mini-btn.active { background: none; color: var(--ink); }
+
+  /* 学习页/复习页详情：紧凑清单区块（层级：区别>释义>例句） */
+  .learn-block {
+    padding: 14px 0;
+    border-bottom: 0.5px solid var(--rule);
+  }
+  .learn-block:last-child { border-bottom: none; }
+  .learn-term {
+    font-size: 20px; font-weight: 500; color: var(--ink);
+    margin-bottom: 7px;
+  }
+  .learn-line2 {
+    font-size: 14px; color: var(--ink);
+    line-height: 1.6; margin-bottom: 5px;
+  }
+  .learn-prefix { font-weight: 500; color: var(--ink); }
+  .learn-meaning {
+    font-size: 13px; color: var(--ink-mid);
+    line-height: 1.5; margin-bottom: 4px;
+  }
+  .learn-line3 {
+    font-size: 12px; color: var(--ink-faint);
+    line-height: 1.5;
+  }
+
+  /* 复习阶段状态条 */
+  .srs-strip {
+    font-size: 11.5px; color: var(--ink-faint);
+    background: none; border: none; border-radius: 0;
+    border-bottom: 0.5px solid var(--rule);
+    padding: 10px 0; margin-bottom: 2px;
+  }
+
+  /* 底部操作按钮：平面化 */
+  .learning-nav { padding: 0 20px; gap: 12px; }
+  .nav-btn {
+    flex: 1; height: 46px;
+    border-radius: 10px;
+    background: none; border: none;
+    color: var(--ink); font-size: 14.5px; font-weight: 400;
+    box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none;
+  }
+  .nav-prev { color: var(--ink-faint); }
+  .nav-btn.jade {
+    background: var(--paper-raised); color: var(--ink-soft);
+    border: 0.5px solid var(--rule);
+  }
+  .nav-btn.primary { background: var(--seal); color: var(--paper); border: none; }
+  .nav-btn.mastered { background: var(--seal); color: var(--paper); border: none; }
+  .nav-btn:disabled { opacity: 0.35; }
+  .nav-btn:active { opacity: 0.8; }
+
+  /* 空状态 */
+  .learning-empty, .empty-state { color: var(--ink-faint); font-size: 13px; }
+
+  /* 复习页：列表总览 */
+  .review-stats {
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding: 12px 0 14px;
+  }
+  .review-stats-left { display: flex; align-items: baseline; gap: 10px; }
+  .review-stats-label { font-size: 12px; color: var(--ink-faint); }
+  .review-stats-num { font-size: 28px; font-weight: 500; color: var(--ink); }
+  .review-refresh-btn {
+    border: 0.5px solid var(--rule); border-radius: 8px;
+    background: var(--paper); color: var(--ink-soft);
+    font-size: 12px; padding: 5px 10px; cursor: pointer;
+    display: flex; align-items: center; gap: 4px; font-family: inherit;
+  }
+  .review-refresh-btn i { font-size: 14px; }
+  .review-list-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 15px 0; border-bottom: 0.5px solid var(--rule);
+    cursor: pointer; width: 100%; background: none; border-top: none;
+    border-left: none; border-right: none;
+    font-family: inherit; text-align: left;
+  }
+  .review-list-row:active { background: var(--paper-raised); }
+  .review-row-name { font-size: 17px; font-weight: 500; color: var(--ink); margin-bottom: 3px; }
+  .review-row-meta { font-size: 12px; color: var(--ink-faint); }
+  .review-row-meta .overdue { color: var(--ink); }
+  .review-row-arrow { font-size: 16px; color: var(--ink-faint); flex-shrink: 0; }
+  /* 详情返回栏 */
+  .review-back {
+    display: flex; align-items: center; gap: 6px;
+    background: none; border: none; color: var(--ink-faint);
+    font-size: 13px; padding: 10px 0 6px; cursor: pointer;
+    font-family: inherit;
+  }
+  .review-back i { font-size: 16px; }
+
+  /* 词库页 */
+  .library-toolbar { align-items: stretch; margin-bottom: 10px; }
+  .search-box {
+    display: flex; align-items: center; gap: 6px;
+    flex: 1; min-width: 150px;
+    border: 0.5px solid var(--rule); border-radius: 10px;
+    background: var(--paper); padding: 0 12px;
+  }
+  .search-box i { font-size: 15px; color: var(--ink-faint); }
+  .search-box input { padding: 11px 0; font-size: 14px; color: var(--ink); }
+  .search-box input::placeholder { color: var(--ink-faint); }
+  .more-btn {
+    width: 42px; flex-shrink: 0;
+    border: 0.5px solid var(--rule); border-radius: 10px;
+    background: var(--paper); color: var(--ink); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .more-btn i { font-size: 18px; }
+  .more-btn.active { background: var(--paper-raised); }
+  .type-tabs {
+    border: none; border-radius: 0; gap: 6px;
+    margin-bottom: 4px;
+  }
+  .type-tab {
+    border: 0.5px solid var(--rule); border-radius: 8px;
+    background: var(--paper); color: var(--ink-soft);
+    padding: 6px 14px; font-size: 12.5px;
+    border-right: 0.5px solid var(--rule);
+  }
+  .type-tab:last-child { border-right: 0.5px solid var(--rule); }
+  .type-tab.active { background: var(--seal); color: var(--paper); font-weight: 500; }
+  /* 更多操作面板 */
+  .more-panel {
+    margin: 2px 0 10px; padding: 14px;
+    border: 0.5px solid var(--rule); border-radius: 12px;
+    background: var(--paper);
+    display: none;
+  }
+  .more-panel.open { display: block; }
+  .more-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .more-grid .action-btn, .more-grid .batch-btn {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 11px 8px; border-radius: 8px;
+    background: var(--paper-raised); color: var(--ink-soft);
+    border: none; font-size: 12.5px; cursor: pointer;
+    font-family: inherit; white-space: nowrap;
+  }
+  .more-grid .action-btn i, .more-grid .batch-btn i { font-size: 15px; }
+  .more-grid .span2 { grid-column: span 2; }
+  /* 批量操作栏：平面化 */
+  .batch-actions { margin-bottom: 10px; }
+  .batch-actions .batch-btn {
+    background: var(--paper-raised); color: var(--ink-soft);
+    border: none; border-radius: 8px; padding: 10px 6px;
+  }
+  .batch-actions .batch-btn.danger { color: var(--ink); }
+  /* 词库列表 */
+  .group-list { margin-top: 2px; }
+  .group-item { border-bottom: 0.5px solid var(--rule); }
+  .group-head { padding: 14px 2px 14px 1px; }
+  .group-head .terms { font-size: 16px; color: var(--ink); font-weight: 400; }
+  .group-head .terms .sep { color: var(--ink-faint); margin: 0 6px; }
+  .chevron { color: var(--ink-faint); font-size: 16px; }
+  .word-block { border-left: 0.5px solid var(--rule); padding: 10px 0 10px 12px; }
+  .word-block .word-term {
+    font-size: 15px; font-weight: 500; color: var(--ink);
+    font-family: inherit; margin-bottom: 3px;
+  }
+  .word-block .word-meaning { font-size: 12.5px; color: var(--ink-mid); margin-bottom: 4px; }
+  .word-block .key-point {
+    border-left: none; padding: 0; margin-bottom: 3px;
+  }
+  .word-block .key-point .label {
+    font-size: 11px; font-weight: 400; color: var(--ink);
+    letter-spacing: 0.03em; margin-bottom: 1px;
+  }
+  .word-block .key-point .text { font-size: 12px; color: var(--ink-faint); }
+  .word-block .word-example { font-size: 12px; color: var(--ink-faint); }
+  /* 类型标签（词库列表头）灰阶化 */
+  .type-tag.idiom { background: var(--jade); }
+  .type-tag.word { background: #a8a8a8; }
+
+  /* 设置页 */
+  .settings-section { border-bottom: 0.5px solid var(--rule); padding-bottom: 16px; }
+  .settings-section h3 { font-size: 20px; font-weight: 500; font-family: inherit; }
+  .form-row label { font-size: 12.5px; color: var(--ink-mid); }
+  .form-row input, .form-row select, .form-row textarea {
+    border: 0.5px solid var(--rule); border-radius: 10px;
+    padding: 12px 14px; font-size: 14px; color: var(--ink);
+    background: var(--paper);
+  }
+  .form-row input:focus, .form-row select:focus, .form-row textarea:focus { outline: 1px solid #d0d0d0; }
+  .form-row input::placeholder { color: var(--ink-faint); }
+  .form-row-duo { display: flex; gap: 10px; }
+  .form-row-duo .form-row { flex: 1; min-width: 0; }
+  .btn-primary, .btn-secondary {
+    border-radius: 10px; font-size: 14px; font-weight: 500;
+  }
+  .btn-primary { background: var(--seal); border-color: var(--ink); color: var(--paper); }
+  .btn-secondary { background: var(--paper); color: var(--ink); border: 0.5px solid var(--rule); }
+  .settings-tip { font-size: 12px; color: var(--ink-faint); line-height: 1.7; }
+
+  /* 弹窗 */
+  .modal-box {
+    background: var(--paper); border: 0.5px solid var(--rule);
+    border-radius: 12px; padding: 16px;
+  }
+  .modal-title { font-size: 17px; font-weight: 500; color: var(--ink); }
+  .modal-close { color: var(--ink-mid); }
+  .word-form-block { border: 0.5px solid var(--rule); border-radius: 10px; background: var(--paper); }
+  .add-word-link { color: var(--ink); }
+  .status-msg { color: var(--ink-soft); }
+  .status-msg.error { color: var(--ink); }
+
+  /* 灰阶化剩余彩色元素 */
+  .action-btn.primary { background: var(--seal); border-color: var(--ink); color: var(--paper); }
+  .action-btn.ai { background: var(--jade); border-color: var(--ink-soft); color: var(--paper); }
+  .library-quick-actions .action-btn.primary { background: var(--seal); border-color: var(--ink); }
+  .library-quick-actions .action-btn.ai { background: var(--jade); border-color: var(--ink-soft); }
+  .batch-btn.danger { color: var(--ink); border-color: var(--ink); }
+  .progress-fill { background: var(--seal); }
+  .ai-warning { color: var(--ink); }
+  .ai-info { color: var(--ink-soft); }
+  .ai-btn.ok { background: var(--jade); border-color: var(--ink-soft); color: var(--paper); }
+  .ai-btn.new { background: var(--seal); border-color: var(--ink); color: var(--paper); }
+  .ai-btn.copy { background: var(--jade); border-color: var(--ink-soft); color: var(--paper); }
+  .mini-btn { color: var(--ink-soft); border-color: var(--rule); background: var(--paper); }
+  .mini-btn.active { background: var(--seal); border-color: var(--ink); color: var(--paper); }
+  .batch-preview-wrap, .ai-result-panel, .ai-candidate-item {
+    border: 0.5px solid var(--rule); border-radius: 10px; background: var(--paper);
+  }
+  .preview-group-item { border-bottom: 0.5px dashed var(--rule); }
+  .word-form-block .wf-title { font-weight: 500; color: var(--ink-soft); }
+  .candidate-title { font-weight: 500; color: var(--ink); }
+  .candidate-meta { color: var(--ink-mid); }
+  .candidate-reason { color: var(--ink-soft); }
+  .review-back:active { opacity: 0.6; }
+  #learningEmpty { padding-top: 40px; }
+  #reviewEmpty { padding-top: 30px; }
+  /* 设置页：使用说明折叠区 */
+  .help-fold {
+    border-top: 0.5px solid var(--rule);
+    margin-top: 20px; padding-top: 14px;
+  }
+  .help-fold-head {
+    display: flex; align-items: center; justify-content: space-between;
+    color: var(--ink-mid); font-size: 13px; cursor: pointer;
+  }
+  .help-fold-head:active { opacity: 0.6; }
+  .help-fold-head i { font-size: 14px; }
+  .help-fold-body .settings-tip { margin-top: 10px; }
+
+  .count-badge {
+    font-size: 10px; color: var(--ink-soft);
+    border: 1px solid var(--rule); border-radius: 8px;
+    padding: 0 6px; margin-left: 6px; white-space: nowrap;
+    font-family: inherit; font-weight: normal;
+  }
+  .single-badge {
+    font-size: 10px; color: var(--ink-soft);
+    background: var(--paper-raised); border: 1px dashed var(--rule);
+    border-radius: 3px; padding: 0 5px; margin-left: 6px; white-space: nowrap;
+  }
+  .mastered-mark { color: #4f8a5b; margin-left: 5px; font-size: 13px; }
+  html[data-theme="dark"] .mastered-mark { color: #7fb88c; }
+  .group-item.mastered .group-head .terms { opacity: 0.62; }
+  .group-item.mastered { border-left: 3px solid #4f8a5b; border-radius: 4px; }
+  html[data-theme="dark"] .group-item.mastered { border-left-color: #7fb88c; }
+  #onlySingleBtn.active { color: var(--seal); font-weight: 700; border-bottom-color: var(--seal); }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- 学习视图（默认进入） -->
+  <div class="view active" id="viewLearning">
+    <div class="app-header">
+      <span class="app-name">易混词背诵</span>
+      <div class="app-actions">
+        <button class="mini-btn" id="learningFilterBtn" title="筛选"><i class="ti ti-filter"></i></button>
+        <button class="mini-btn" id="learningRefreshBtn" title="刷新"><i class="ti ti-refresh"></i></button>
+      </div>
+    </div>
+    <div class="mode-switch">
+      <button class="mode-switch-btn active" data-mode="A">完整词库</button>
+      <button class="mode-switch-btn" data-mode="B">最近新增/改动</button>
+    </div>
+    <div class="learning-toolbar">
+      <span class="learning-progress" id="learningProgress">第 0 组 / 共 0 组</span>
+    </div>
+    <div id="learningContent"></div>
+    <div class="learning-empty" id="learningEmpty" style="display:none;">暂无符合条件的词组，去「词库」添加新词吧</div>
+    <div class="learning-nav" id="learningNav" style="display:none;">
+      <button class="nav-btn nav-prev" id="prevGroupBtn">上一组</button>
+      <button class="nav-btn primary" id="masterBtn">标记已掌握</button>
+      <button class="nav-btn" id="nextGroupBtn">下一组</button>
+    </div>
+  </div>
+
+  <!-- 复习视图 -->
+  <div class="view" id="viewReview">
+    <div class="app-header">
+      <span class="app-name">易混词背诵</span>
+      <div class="app-actions"></div>
+    </div>
+    <!-- 列表总览层 -->
+    <div id="reviewListLayer">
+      <div class="review-stats">
+        <div class="review-stats-left">
+          <span class="review-stats-label">今日待复习</span>
+          <span class="review-stats-num" id="reviewProgress">0 组</span>
+        </div>
+        <button class="review-refresh-btn" id="reviewRefreshBtn"><i class="ti ti-refresh"></i>刷新</button>
+      </div>
+      <div id="reviewList"></div>
+      <div class="learning-empty" id="reviewEmpty" style="display:none;">
+      <i class="ti ti-circle-check" style="font-size:28px;margin-bottom:8px;display:block;color:#c0c0c0;"></i>
+      <span>今日没有待复习的词组</span>
+    </div>
+    </div>
+    <!-- 详情层 -->
+    <div id="reviewDetailLayer" style="display:none;">
+      <button class="review-back" id="reviewBackBtn"><i class="ti ti-arrow-left"></i>返回列表</button>
+      <div id="reviewContent"></div>
+      <div class="learning-nav" id="reviewNav" style="display:none;">
+        <button class="nav-btn nav-prev" id="reviewPrevBtn">上一组</button>
+        <button class="nav-btn jade" id="reviewAgainBtn">没记住</button>
+        <button class="nav-btn primary" id="reviewMasterBtn">已掌握</button>
+        <button class="nav-btn" id="reviewNextBtn">下一组</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 词库视图 -->
+  <div class="view" id="viewLibrary">
+    <div class="library-toolbar">
+      <div class="search-box">
+        <i class="ti ti-search"></i>
+        <input type="text" id="searchInput" placeholder="搜索词语" />
+      </div>
+      <button class="more-btn" id="expandAllBtn" title="展开/收起全部"><i class="ti ti-eye" id="expandAllIcon"></i></button>
+      <button class="more-btn" id="moreActionsBtn" title="更多操作"><i class="ti ti-dots"></i></button>
+    </div>
+    <div class="type-tabs" id="typeTabs">
+      <button class="type-tab active" data-type="全部">全部</button>
+      <button class="type-tab" data-type="成语">成语</button>
+      <button class="type-tab" data-type="实词">实词</button>
+      <button class="type-tab" id="onlySingleBtn" title="只显示尚未找到易混搭档的单词语组">只看单词语</button>
+    </div>
+    <div class="more-panel" id="morePanel">
+      <div class="more-grid" id="quickActions">
+        <button class="action-btn" id="addNewBtn"><i class="ti ti-plus"></i>新建词组</button>
+        <button class="batch-btn" id="batchToggleBtn"><i class="ti ti-checkbox"></i>批量选择</button>
+        <button class="action-btn" id="batchImportBtn"><i class="ti ti-upload"></i>AI批量导入</button>
+      </div>
+    </div>
+    <div class="batch-actions" id="batchActions">
+      <button class="batch-btn" id="cancelBatchBtn">取消选择</button>
+      <button class="batch-btn" id="selectAllBtn">全选</button>
+      <button class="batch-btn" id="toggleTypeBtn">转换类型</button>
+      <button class="batch-btn danger" id="deleteBatchBtn">删除选中</button>
+    </div>
+    <div class="group-list" id="groupList"></div>
+    <div class="empty-state" id="emptyState" style="display:none;">没有找到匹配的词</div>
+  </div>
+
+  <!-- 设置视图 -->
+  <div class="view" id="viewSettings">
+    <div class="settings-section">
+      <h3>外观</h3>
+      <div class="form-row">
+        <label>主题</label>
+        <select id="themeSelect">
+          <option value="auto">跟随系统</option>
+          <option value="light">浅色</option>
+          <option value="dark">深色</option>
+        </select>
+      </div>
+      <p class="settings-tip">深色模式适合夜间背词。选择「跟随系统」时随设备的深浅色设置自动切换。</p>
+    </div>
+    <div class="settings-section">
+      <h3>AI 接口配置</h3>
+      <div class="form-row">
+        <label>API Key（密钥）</label>
+        <input type="password" id="apiKeyInput" placeholder="输入你的大模型API密钥" />
+      </div>
+      <div class="form-row">
+        <label>接口地址</label>
+        <input type="text" id="apiUrlInput" value="https://open.bigmodel.cn/api/paas/v4/chat/completions" />
+      </div>
+      <div class="form-row">
+        <label>模型名称</label>
+        <input type="text" id="apiModelInput" value="glm-5.3-flash" />
+      </div>
+      <div class="form-row-duo">
+        <div class="form-row">
+          <label>max_tokens</label>
+          <input type="number" id="apiMaxTokensInput" value="4096" min="100" step="1" />
+        </div>
+        <div class="form-row">
+          <label>分组阶段每批词语数</label>
+          <input type="number" id="apiChunkSizeInput" value="80" min="20" step="1" />
+        </div>
+      </div>
+      <div class="form-row">
+        <label>自定义附加请求参数（可选，JSON格式）</label>
+        <textarea id="apiExtraParamsInput" style="min-height:52px;" placeholder='需要附加到请求体的字段，如：{"thinking":{"type":"enabled"},"reasoning_effort":"max"}'></textarea>
+      </div>
+      <div class="form-actions">
+        <button class="btn-primary" id="saveSettingsBtn">保存设置</button>
+      </div>
+      <div class="help-fold">
+        <div class="help-fold-head" id="helpFoldHead">
+          <span>使用说明</span>
+          <i class="ti ti-chevron-down" id="helpFoldIcon"></i>
+        </div>
+        <div class="help-fold-body" id="helpFoldBody" style="display:none;">
+          <p class="settings-tip">密钥保存在本机浏览器，不会上传。默认适配智谱开放平台接口，其他支持OpenAI格式的接口（如DeepSeek）也可修改地址使用。<br>
+          max_tokens 是AI单次回答的长度上限（含思考模型的思考消耗）：建议保持4096以上，接口报 token 超限错误就调小。批量解析已改为两阶段流水线（全局分组→分批补全），每批自动留足余量并支持断点续传。「分组阶段每批词语数」控制分组阶段的批次大小，词越多分组越准但单次请求越大。自定义附加参数用于适配需要特殊字段的模型，不填则不影响。<br>
+          注意：使用本工具需要能联网访问大模型接口的浏览器环境。</p>
+        </div>
+      </div>
+    </div>
+    <div class="settings-section">
+      <h3>学习管理</h3>
+      <div class="form-row" style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <input type="checkbox" id="autoEnrollReview" style="width:18px;height:18px;flex-shrink:0;">
+        <label for="autoEnrollReview" style="font-size:13.5px;margin:0;">新词组自动加入复习队列</label>
+      </div>
+      <div class="form-actions">
+        <button class="btn-secondary" id="toFirstBtn">回到第一组</button>
+        <button class="btn-secondary" id="clearMasteredBtn">清空背诵进度</button>
+      </div>
+      <p class="settings-tip">开启后，新导入/新建的词组会自动进入「复习」Tab（今天起开始排期）；关闭则需手动在复习里标记才进入排期。「回到第一组」只重置两个背诵模式的当前位置，不清除已掌握标记。</p>
+    </div>
+    <div class="settings-section">
+      <h3>数据管理</h3>
+      <div id="storageMeter" style="margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--ink-soft);margin-bottom:4px;">
+          <span>本机存储占用</span><span id="storagePctText">--</span>
+        </div>
+        <div style="height:8px;background:var(--rule);border-radius:4px;overflow:hidden;">
+          <div id="storageFill" style="height:100%;width:0%;background:var(--jade);border-radius:4px;transition:width .3s;"></div>
+        </div>
+        <div id="storageWarn" style="display:none;font-size:12px;color:#b3402e;margin-top:4px;">存储即将占满：批量导入断点可能保存失败，请立即导出备份并清理不需要的词组。</div>
+      </div>
+      <div class="form-actions">
+        <button class="btn-secondary" id="exportBtn">导出备份</button>
+        <button class="btn-secondary" id="importBtn">导入备份</button>
+      </div>
+      <div class="form-actions">
+        <button class="btn-secondary" id="clearCustomBtn">清空词库</button>
+      </div>
+      <p class="settings-tip">导出会把全部词组（含基础词/复盘词标签、已掌握标记、复习排期）保存为JSON文件；换设备时在设置里导入即可恢复。清空词库不可恢复，请先导出备份。<br>
+      ⚠️ 复习进度保存在本机浏览器 localStorage：清除浏览器缓存、更换浏览器会丢失复习进度，请定期导出JSON备份。</p>
+      <input type="file" id="jsonFileInput" accept=".json" style="display:none;">
+    </div>
+  </div>
+</div>
+
+<!-- 底部导航 -->
+<div class="tab-bar">
+  <div class="tab-bar-inner">
+    <button class="tab-btn active" data-view="learning">
+      <i class="ti ti-book"></i><span>学习</span>
+    </button>
+    <button class="tab-btn" data-view="review">
+      <i class="ti ti-repeat"></i><span>复习</span>
+    </button>
+    <button class="tab-btn" data-view="library">
+      <i class="ti ti-stack-2"></i><span>词库</span>
+    </button>
+    <button class="tab-btn" data-view="settings">
+      <i class="ti ti-settings"></i><span>设置</span>
+    </button>
+  </div>
+</div>
+
+<!-- 新建词组弹窗 -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal-box">
+    <button class="modal-close" data-close="addModal" aria-label="关闭">×</button>
+    <h3 class="modal-title serif">新建词组</h3>
+    <div class="form-row">
+      <label>类型</label>
+      <select id="newType">
+        <option value="成语">成语</option>
+        <option value="实词">实词</option>
+      </select>
+    </div>
+    <div id="wordBlocks"></div>
+    <button class="add-word-link" id="addWordLink">+ 增加一个对比词</button>
+    <div class="form-actions">
+      <button class="btn-secondary" id="cancelAddBtn">取消</button>
+      <button class="btn-primary" id="saveAddBtn">保存词组</button>
+    </div>
+    <div class="status-msg" id="addStatusMsg"></div>
+  </div>
+</div>
+
+<!-- 编辑词组弹窗 -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal-box">
+    <button class="modal-close" data-close="editModal" aria-label="关闭">×</button>
+    <h3 class="modal-title serif">编辑词组</h3>
+    <div id="editModalBody"></div>
+    <div class="form-actions">
+      <button class="btn-secondary" id="editCancelBtn">取消</button>
+      <button class="btn-primary" id="editSaveBtn">保存修改</button>
+    </div>
+  </div>
+</div>
+
+<!-- 批量AI解析弹窗 -->
+<div class="modal-overlay" id="batchModal">
+  <div class="modal-box">
+    <button class="modal-close" data-close="batchModal" aria-label="关闭">×</button>
+    <h3 class="modal-title serif">AI批量解析导入</h3>
+    <div id="batchResumeBar" style="display:none;background:rgba(45,90,62,.08);border:1px dashed var(--jade);border-radius:8px;padding:8px 10px;font-size:12.5px;margin-bottom:10px;">
+      <div id="batchResumeText" style="margin-bottom:6px;"></div>
+      <button class="ai-btn ok" id="batchResumeBtn">继续上次任务</button>
+      <button class="ai-btn" id="batchResumeDropBtn" style="margin-left:6px;">放弃并清除</button>
+    </div>
+    <div class="form-row">
+      <label>导入类型</label>
+      <select id="batchImportType">
+        <option value="base" selected>基础词库（不进「最近新增/改动」，打底大词库用这个）</option>
+        <option value="review">复盘新词（进入「最近新增/改动」，刷题错题用这个）</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>粘贴词语 / 讲义文本</label>
+      <textarea id="batchRawText" style="min-height:140px;" placeholder="支持大批量：一行一个词、逗号分隔或整段讲义都可以。流程：本地拆词去重 → AI全局分组（跨批合并、可归入已有词组）→ 分批补全释义/考点/例句（断点续传、失败可单独重试）"></textarea>
+    </div>
+    <div class="form-actions">
+      <button class="btn-primary" id="batchParseBtn">开始解析</button>
+      <button class="btn-secondary" id="batchStopBtn" style="display:none;">停止</button>
+    </div>
+    <div class="status-msg" id="batchStatusMsg"></div>
+    <div class="batch-progress" id="batchProgressWrap">
+      <div class="progress-bar"><div class="progress-fill" id="batchProgressFill"></div></div>
+      <div class="progress-text" id="batchProgressText">0%</div>
+    </div>
+    <div class="batch-preview-wrap" id="batchPreviewWrap">
+      <div id="batchPreviewContent"></div>
+      <div class="form-actions" style="margin-top:10px;">
+        <button class="btn-primary" id="previewConfirmBtn">确认导入</button>
+        <button class="btn-secondary" id="batchRetryBtn" style="display:none;">重试失败批次</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 学习筛选弹窗 -->
+<div class="modal-overlay" id="filterModal">
+  <div class="modal-box" style="max-width:360px;">
+    <button class="modal-close" data-close="filterModal" aria-label="关闭">×</button>
+    <h3 class="modal-title serif">背诵筛选</h3>
+    <div class="form-row">
+      <label>类型</label>
+      <select id="filterType">
+        <option value="全部">全部</option>
+        <option value="成语">成语</option>
+        <option value="实词">实词</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label><input type="checkbox" id="filterMastered" style="width:auto;"> 只背未掌握的</label>
+    </div>
+    <p class="settings-tip">更改筛选后会重新生成背诵列表，当前位置回到第 1 组。</p>
+    <div class="form-actions">
+      <button class="btn-secondary" id="filterCancelBtn">取消</button>
+      <button class="btn-primary" id="filterConfirmBtn">确定</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ================= 全局状态 =================
+let customGroups = [];
+let allGroups = [];
+let currentType = '全部';
+let currentSearch = '';
+let onlySingle = false;
+let openGroups = new Set();
+let masteredSet = new Set();
+let batchMode = false;
+let selectedGroups = new Set();
+let formWordCount = 0;
+const MAX_FORM_WORDS = Infinity; // 每组词语数量不设上限
+let aiConfig = { apiKey:'', apiUrl:'https://open.bigmodel.cn/api/paas/v4/chat/completions', model:'glm-5.3-flash', maxTokens:4096, extraParams:'', chunkSize:80 };
+let batchParsedResult = null;
+let editingGroupId = null;
+
+// 学习状态：两种模式各自独立快照 + 断点
+let learnState = {
+  mode: 'A',
+  A: { snapshot: [], index: 0, filterType: '全部', filterMastered: false },
+  B: { snapshot: [], index: 0, filterType: '全部', filterMastered: false }
+};
+// 复习状态：今日待复习快照
+let reviewState = { snapshot: [], index: 0 };
+// 复习配置
+let reviewConfig = { autoEnroll: false };
+// 误点「已掌握」的内存撤销快照（仅当前会话，刷新即失效）：key=组id，value={reviewStage,lastReviewDate,nextReviewDate}
+const srsUndoSnapshots = new Map();
+
+// ================= DOM引用 =================
+const views = {
+  learning: document.getElementById('viewLearning'),
+  review: document.getElementById('viewReview'),
+  library: document.getElementById('viewLibrary'),
+  settings: document.getElementById('viewSettings')
+};
+const tabBtns = document.querySelectorAll('.tab-btn');
+
+const groupListEl = document.getElementById('groupList');
+const emptyStateEl = document.getElementById('emptyState');
+const searchInput = document.getElementById('searchInput');
+const typeTabs = document.querySelectorAll('#typeTabs .type-tab');
+const batchToggleBtn = document.getElementById('batchToggleBtn');
+const quickActionsEl = document.getElementById('quickActions');
+const batchActionsEl = document.getElementById('batchActions');
+const selectAllBtn = document.getElementById('selectAllBtn');
+const toggleTypeBtn = document.getElementById('toggleTypeBtn');
+const deleteBatchBtn = document.getElementById('deleteBatchBtn');
+const cancelBatchBtn = document.getElementById('cancelBatchBtn');
+const moreActionsBtn = document.getElementById('moreActionsBtn');
+const morePanel = document.getElementById('morePanel');
+const expandAllBtn = document.getElementById('expandAllBtn');
+const expandAllIcon = document.getElementById('expandAllIcon');
+
+const learningContent = document.getElementById('learningContent');
+const learningEmpty = document.getElementById('learningEmpty');
+const learningNav = document.getElementById('learningNav');
+const learningProgress = document.getElementById('learningProgress');
+const prevGroupBtn = document.getElementById('prevGroupBtn');
+const nextGroupBtn = document.getElementById('nextGroupBtn');
+const masterBtn = document.getElementById('masterBtn');
+const learningFilterBtn = document.getElementById('learningFilterBtn');
+const learningRefreshBtn = document.getElementById('learningRefreshBtn');
+const modeSwitchBtns = document.querySelectorAll('.mode-switch-btn');
+
+const reviewContent = document.getElementById('reviewContent');
+const reviewEmpty = document.getElementById('reviewEmpty');
+const reviewNav = document.getElementById('reviewNav');
+const reviewProgress = document.getElementById('reviewProgress');
+const reviewPrevBtn = document.getElementById('reviewPrevBtn');
+const reviewNextBtn = document.getElementById('reviewNextBtn');
+const reviewAgainBtn = document.getElementById('reviewAgainBtn');
+const reviewMasterBtn = document.getElementById('reviewMasterBtn');
+const reviewRefreshBtn = document.getElementById('reviewRefreshBtn');
+const reviewListLayer = document.getElementById('reviewListLayer');
+const reviewDetailLayer = document.getElementById('reviewDetailLayer');
+const reviewList = document.getElementById('reviewList');
+const reviewBackBtn = document.getElementById('reviewBackBtn');
+
+const addModal = document.getElementById('addModal');
+const editModal = document.getElementById('editModal');
+const batchModal = document.getElementById('batchModal');
+const filterModal = document.getElementById('filterModal');
+
+// ================= 拼音排序（按每组第一个词语的拼音 A-Z） =================
+const groupCollator = new Intl.Collator('zh-Hans-CN', { sensitivity: 'base' });
+function sortGroups(groups) {
+  return groups.slice().sort((a, b) => {
+    const ta = (a.words[0] && a.words[0].term) || '';
+    const tb = (b.words[0] && b.words[0].term) || '';
+    return groupCollator.compare(ta, tb);
+  });
+}
+
+// ================= 工具函数 =================
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str == null ? '' : str;
+  return div.innerHTML;
+}
+function rebuildAllGroups() {
+  allGroups = sortGroups([...customGroups]);
+}
+function matchesSearch(group, q) {
+  if (!q) return true;
+  return group.words.some(w =>
+    (w.term && w.term.includes(q)) || (w.meaning && w.meaning.includes(q))
+  );
+}
+function isMastered(groupId, term) {
+  return masteredSet.has(groupId + '::' + term);
+}
+function isGroupAllMastered(groupId) {
+  const g = allGroups.find(x => x.id === groupId);
+  if (!g) return false;
+  return g.words.every(w => isMastered(groupId, w.term));
+}
+function getCustomGroupById(gid) {
+  return customGroups.find(g => g.id === gid);
+}
+function getGroupById(gid) {
+  return allGroups.find(g => g.id === gid);
+}
+function now() { return Date.now(); }
+
+// ================= 复习排期工具 =================
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function addDays(dateStr, days) {
+  const [y, m, dd] = dateStr.split('-').map(Number);
+  const d = new Date(y, m-1, dd + days);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+// 晋级后的 stage 对应的下次间隔天数：1→1天，2→3天，3→7天，4→15天，5+→30天
+function reviewInterval(stage) {
+  const map = { 1: 1, 2: 3, 3: 7, 4: 15 };
+  return map[stage] || 30;
+}
+function normalizeSrs(g) {
+  if (typeof g.lastReviewDate !== 'string') g.lastReviewDate = null;
+  if (typeof g.nextReviewDate !== 'string') g.nextReviewDate = null;
+  // 钳位：非法/负数阶段一律归 0，防止日期算飞
+  if (typeof g.reviewStage !== 'number' || !isFinite(g.reviewStage) || g.reviewStage < 0) g.reviewStage = 0;
+  return g;
+}
+// 新建词组时按开关设置初始排期
+function applyNewGroupSrs(g) {
+  g.reviewStage = 0;
+  g.lastReviewDate = null;
+  if (reviewConfig.autoEnroll) g.nextReviewDate = todayStr();
+  else g.nextReviewDate = null;
+  return g;
+}
+
+// ================= 本地存储 =================
+// 内置示例词（首次打开时自动载入，方便直接体验；可随时删除）
+const BUILTIN_GROUPS = [
+  { type: '成语', isBase: true, words: [
+    { term: '不以为然', meaning: '不认为是对的，表示不同意', keyPoint: '强调“不认同”，多表否定态度', example: '他对这个方案不以为然。' },
+    { term: '不以为意', meaning: '不把它放在心上，表示不重视', keyPoint: '强调“不在意、不重视”', example: '大家提醒他小心，他却不以为意。' },
+    { term: '差强人意', meaning: '大体上还能使人满意', keyPoint: '是“还算满意”，不是“不满意”', example: '这次的成绩差强人意。' },
+    { term: '勉为其难', meaning: '勉强去做能力不及或不愿做的事', keyPoint: '强调“勉强去做”', example: '他只好勉为其难地答应了。' },
+    { term: '强人所难', meaning: '勉强别人做不愿做的事', keyPoint: '强调“难为别人”', example: '不要强人所难。' },
+    { term: '强词夺理', meaning: '本来没有理，硬说成有理', keyPoint: '强调“无理狡辩”', example: '他明明错了还强词夺理。' }
+  ]},
+  { type: '实词', isBase: true, words: [
+    { term: '权力', meaning: '政治上的强制力量；职责范围内的支配力量', keyPoint: '侧重“权”，与职责、机关相关', example: '国家权力机关。' },
+    { term: '权利', meaning: '公民依法应享有的权力和利益', keyPoint: '侧重“利”，与利益、义务相对', example: '公民享有受教育的权利。' }
+  ]},
+  { type: '实词', isBase: true, words: [
+    { term: '遏制', meaning: '制止、控制，使其不再发展', keyPoint: '强调“压下去、阻止势头”', example: '遏制通货膨胀。' },
+    { term: '扼制', meaning: '抑制、控制住', keyPoint: '强调“用力掐住、控制”', example: '扼制了这股歪风。' }
+  ]},
+  { type: '实词', isBase: true, words: [
+    { term: '推脱', meaning: '推卸、不肯承担（责任等）', keyPoint: '偏“推卸”，对象多为责任', example: '推脱责任。' },
+    { term: '推托', meaning: '借故拒绝', keyPoint: '偏“借故推辞”，对象多为请求', example: '他推托有事没来。' }
+  ]},
+  { type: '实词', isBase: false, words: [
+    { term: '爆发', meaning: '突然发作、突然发生', keyPoint: '多用于火山、战争、情绪等', example: '火山爆发。' },
+    { term: '暴发', meaning: '突然发财或得势；突然发生', keyPoint: '多用于山洪、疾病等，也可指暴发户', example: '山洪暴发。' }
+  ]},
+  { type: '成语', isBase: false, words: [
+    { term: '南辕北辙', meaning: '行动和目的正好相反', keyPoint: '强调“方向、目的相反”', example: '他的做法与目标南辕北辙。' },
+    { term: '背道而驰', meaning: '朝着相反的方向走', keyPoint: '强调“彼此方向相反”', example: '这与我们的初衷背道而驰。' }
+  ]},
+  { type: '成语', isBase: false, words: [
+    { term: '浮光掠影', meaning: '印象不深刻，观察不仔细', keyPoint: '强调“停留表面、不深入”', example: '学习不能浮光掠影。' },
+    { term: '走马观花', meaning: '粗略地观察一下', keyPoint: '强调“看得快、不细致”', example: '他只是走马观花地看了一遍。' }
+  ]},
+  { type: '成语', isBase: false, words: [
+    { term: '等量齐观', meaning: '把不同的事物一律同等看待', keyPoint: '多用于否定句，强调“同等看待”', example: '二者不可等量齐观。' },
+    { term: '同日而语', meaning: '把不同时间的人或事放在一起谈论', keyPoint: '强调“相提并论”，多用于否定', example: '今非昔比，不可同日而语。' }
+  ]},
+  { type: '成语', isBase: false, words: [
+    { term: '无可厚非', meaning: '虽有缺点，但可以理解、原谅', keyPoint: '有“可以原谅”的余地', example: '他的做法无可厚非。' },
+    { term: '无可非议', meaning: '没有什么可以指责的', keyPoint: '强调“完全正确，无可指责”', example: '他的行为无可非议。' }
+  ]},
+  { type: '成语', isBase: false, words: [
+    { term: '事半功倍', meaning: '费力小、收效大', keyPoint: '强调“效率高”', example: '方法对了事半功倍。' },
+    { term: '事倍功半', meaning: '费力大、收效小', keyPoint: '强调“效率低”', example: '方法不对事倍功半。' }
+  ]},
+  { type: '成语', isBase: false, words: [
+    { term: '安之若素', meaning: '遇到不顺利情况，像平常一样对待', keyPoint: '强调“坦然对待困境”', example: '面对流言他安之若素。' },
+    { term: '处之泰然', meaning: '遇到困难或紧急情况沉着镇定', keyPoint: '强调“沉着镇定”', example: '危机面前他处之泰然。' }
+  ]},
+  { type: '成语', isBase: false, words: [
+    { term: '相辅相成', meaning: '两件事互相配合、互相补充', keyPoint: '强调“互相配合促进”', example: '理论和实践相辅相成。' },
+    { term: '相得益彰', meaning: '互相配合、映衬，使双方都更好', keyPoint: '强调“配合后效果更佳”', example: '二者结合相得益彰。' }
+  ]},
+  { type: '成语', isBase: false, words: [
+    { term: '一蹴而就', meaning: '一步就成功，形容事情轻而易举', keyPoint: '强调“一下子成功”，多用于否定', example: '成功不是一蹴而就的。' },
+    { term: '一挥而就', meaning: '一动笔就写成了，形容才思敏捷', keyPoint: '强调“写文章、写字快”', example: '他文思泉涌，一挥而就。' }
+  ]},
+  { type: '成语', isBase: false, words: [
+    { term: '望尘莫及', meaning: '远远落在后面，追赶不上', keyPoint: '强调“差距大，赶不上”', example: '他的水平让我望尘莫及。' },
+    { term: '鞭长莫及', meaning: '力量达不到，想管也管不了', keyPoint: '强调“力不能及，管不到”', example: '远在千里，鞭长莫及。' }
+  ]},
+  { type: '成语', isBase: false, words: [
+    { term: '莫衷一是', meaning: '意见分歧，不能得出一致的结论', keyPoint: '强调“意见不统一”', example: '大家议论纷纷，莫衷一是。' },
+    { term: '无所适从', meaning: '不知听从谁好，不知怎么办才好', keyPoint: '强调“不知怎么办”', example: '方案太多，反而无所适从。' }
+  ]},
+  { type: '成语', isBase: false, words: [
+    { term: '络绎不绝', meaning: '行人车马来来往往，接连不断', keyPoint: '侧重“来往不断”', example: '参观者络绎不绝。' },
+    { term: '川流不息', meaning: '行人车马像水流一样连续不断', keyPoint: '侧重“像流水一样连续”', example: '大街上车辆川流不息。' }
+  ]},
+  { type: '成语', isBase: false, words: [
+    { term: '声名鹊起', meaning: '名声迅速提高', keyPoint: '强调“名声一下子大起来”', example: '他凭借这部作品声名鹊起。' },
+    { term: '名声大噪', meaning: '名声广泛传播，广为传扬', keyPoint: '强调“名声传得很广”', example: '这部电影让他名声大噪。' }
+  ]},
+  { type: '成语', isBase: false, words: [
+    { term: '凤毛麟角', meaning: '稀少而珍贵的人或事物', keyPoint: '强调“稀少珍贵”', example: '这样的天才实属凤毛麟角。' },
+    { term: '屈指可数', meaning: '扳着手指就能数清，形容数量很少', keyPoint: '强调“数量极少”', example: '能坚持下来的人屈指可数。' }
+  ]},
+  { type: '成语', isBase: false, words: [
+    { term: '鱼目混珠', meaning: '拿假的冒充真的', keyPoint: '强调“以假乱真”', example: '市场上常有鱼目混珠的现象。' },
+    { term: '滥竽充数', meaning: '没有真才实学的人混在行家里充数', keyPoint: '强调“冒充充数”', example: '他不会唱歌，上台纯属滥竽充数。' }
+  ]},
+  { type: '成语', isBase: false, words: [
+    { term: '骇人听闻', meaning: '使人听了非常震惊（多指坏事）', keyPoint: '强调“令人震惊”', example: '这起案件骇人听闻。' },
+    { term: '耸人听闻', meaning: '故意夸大事实，使人震惊', keyPoint: '强调“故意夸大”', example: '这是耸人听闻的假消息。' }
+  ]},
+  { type: '成语', isBase: false, words: [
+    { term: '层出不穷', meaning: '接连不断地出现，没有穷尽', keyPoint: '强调“不断出现”', example: '新问题层出不穷。' },
+    { term: '屡见不鲜', meaning: '经常看见，不新奇', keyPoint: '强调“见多了不新鲜”', example: '这种现象屡见不鲜。' }
+  ]},
+  { type: '成语', isBase: false, words: [
+    { term: '侃侃而谈', meaning: '理直气壮、从容不迫地说话', keyPoint: '褒义，强调“从容有理”', example: '他在台上侃侃而谈。' },
+    { term: '夸夸其谈', meaning: '说话浮夸，不切实际', keyPoint: '贬义，强调“浮夸不实”', example: '不要只夸夸其谈，要落到实处。' }
+  ]},
+  { type: '成语', isBase: false, words: [
+    { term: '固步自封', meaning: '安于现状，不求进步', keyPoint: '强调“不求上进”', example: '不能固步自封，要勇于创新。' },
+    { term: '墨守成规', meaning: '守着老规矩，不思改进', keyPoint: '强调“守旧不变”', example: '企业墨守成规终将被淘汰。' }
+  ]}
+];
+
+async function loadCustomGroups() {
+  try {
+    const raw = localStorage.getItem('wordgroups:custom');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        // 兼容旧数据：没有时间戳的补一个；没有 isBase 的默认按复盘词处理；补齐复习排期字段
+        customGroups = parsed.map(g => {
+          if (!g.createdAt) g.createdAt = now();
+          if (!g.modifiedAt) g.modifiedAt = now();
+          if (typeof g.isBase !== 'boolean') g.isBase = false;
+          return normalizeSrs(g);
+        });
+      }
+    } else {
+      // 首次使用：载入内置示例词，方便直接体验（可随时删除）
+      customGroups = BUILTIN_GROUPS.map((g, i) => ({
+        id: 'seed-' + (i + 1) + '-' + Date.now(),
+        type: g.type,
+        isBase: g.isBase,
+        createdAt: now(),
+        modifiedAt: now(),
+        lastReviewDate: null,
+        nextReviewDate: null,
+        reviewStage: 0,
+        words: g.words.map(w => ({ ...w }))
+      }));
+      persistCustomGroups();
+    }
+  } catch (e) { customGroups = []; }
+  rebuildAllGroups();
+  renderLibrary();
+  refreshLearningList();
+}
+async function persistCustomGroups() {
+  localStorage.setItem('wordgroups:custom', JSON.stringify(customGroups));
+}
+async function loadMasteredSet() {
+  try {
+    const raw = localStorage.getItem('wordgroups:mastered');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) masteredSet = new Set(parsed);
+    }
+  } catch (e) { masteredSet = new Set(); }
+}
+async function persistMasteredSet() {
+  localStorage.setItem('wordgroups:mastered', JSON.stringify([...masteredSet]));
+}
+// ================= 主题（浅/深/跟随系统） =================
+function applyThemeSetting(v) {
+  if (v === 'light' || v === 'dark') document.documentElement.setAttribute('data-theme', v);
+  else document.documentElement.removeAttribute('data-theme');
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) {
+    const dark = v === 'dark' || (v !== 'light' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    meta.setAttribute('content', dark ? '#17181a' : '#ffffff');
+  }
+}
+function loadThemeSetting() {
+  let v = 'auto';
+  try { v = localStorage.getItem('app:theme') || 'auto'; } catch(e) {}
+  const sel = document.getElementById('themeSelect');
+  if (sel) sel.value = v;
+  applyThemeSetting(v);
+}
+function saveThemeSetting() {
+  const sel = document.getElementById('themeSelect');
+  const v = sel ? sel.value : 'auto';
+  try { localStorage.setItem('app:theme', v); } catch(e) {}
+  applyThemeSetting(v);
+}
+// 跟随系统时实时响应系统切换
+if (window.matchMedia) {
+  try { window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => loadThemeSetting()); } catch(e) {}
+}
+
+// ================= 本地存储容量监控 =================
+function localStorageUsage() {
+  let chars = 0;
+  const items = [];
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      const size = (localStorage.getItem(k) || '').length + k.length;
+      chars += size;
+      items.push([k, size]);
+    }
+  } catch(e) {}
+  items.sort((a, b) => b[1] - a[1]);
+  return { bytes: chars * 2, quota: 5 * 1024 * 1024, items };
+}
+function renderStorageMeter() {
+  const wrap = document.getElementById('storageMeter');
+  if (!wrap) return;
+  const u = localStorageUsage();
+  const pct = Math.min(100, Math.round(u.bytes / u.quota * 100));
+  const fmt = (b) => b >= 1024 * 1024 ? (b / 1024 / 1024).toFixed(1) + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB';
+  const fill = document.getElementById('storageFill');
+  fill.style.width = pct + '%';
+  fill.style.background = pct >= 85 ? '#b3402e' : (pct >= 65 ? '#c28a2b' : 'var(--jade)');
+  document.getElementById('storagePctText').textContent = '约 ' + fmt(u.bytes) + ' / 5 MB（' + pct + '%）';
+  document.getElementById('storageWarn').style.display = pct >= 80 ? 'block' : 'none';
+}
+let batchStorageWarned = false;
+function warnStorageFullOnce() {
+  if (batchStorageWarned) return;
+  batchStorageWarned = true;
+  alert('⚠️ 本地存储空间已满，批量导入断点未能保存！\n建议：到「设置 → 数据管理」导出备份，再清理不需要的词组（或删除过大的断点数据）。');
+}
+
+async function loadAiConfig() {
+  try {
+    const raw = localStorage.getItem('ai:config');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      aiConfig = { ...aiConfig, ...parsed };
+      apiKeyInput.value = aiConfig.apiKey || '';
+      apiUrlInput.value = aiConfig.apiUrl || '';
+      apiModelInput.value = aiConfig.model || '';
+      apiMaxTokensInput.value = aiConfig.maxTokens || 4096;
+      apiExtraParamsInput.value = aiConfig.extraParams || '';
+      apiChunkSizeInput.value = aiConfig.chunkSize || 80;
+    }
+  } catch(e) {}
+}
+async function saveAiConfig() {
+  aiConfig.apiKey = document.getElementById('apiKeyInput').value.trim();
+  aiConfig.apiUrl = document.getElementById('apiUrlInput').value.trim();
+  aiConfig.model = document.getElementById('apiModelInput').value.trim();
+  const mt = parseInt(document.getElementById('apiMaxTokensInput').value, 10);
+  aiConfig.maxTokens = (isFinite(mt) && mt >= 100) ? mt : 4096;
+  aiConfig.extraParams = document.getElementById('apiExtraParamsInput').value.trim();
+  const cs = parseInt(document.getElementById('apiChunkSizeInput').value, 10);
+  aiConfig.chunkSize = (isFinite(cs) && cs >= 20) ? cs : 80;
+  localStorage.setItem('ai:config', JSON.stringify(aiConfig));
+}
+function loadLearnState() {
+  try {
+    const raw = localStorage.getItem('learn:state');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.A && parsed.B) {
+        learnState = {
+          mode: parsed.mode === 'B' ? 'B' : 'A',
+          A: { snapshot: Array.isArray(parsed.A.snapshot) ? parsed.A.snapshot : [], index: parsed.A.index || 0, filterType: parsed.A.filterType || '全部', filterMastered: !!parsed.A.filterMastered },
+          B: { snapshot: Array.isArray(parsed.B.snapshot) ? parsed.B.snapshot : [], index: parsed.B.index || 0, filterType: parsed.B.filterType || '全部', filterMastered: !!parsed.B.filterMastered }
+        };
+      }
+    }
+  } catch(e) {}
+}
+function saveLearnState() {
+  try {
+    localStorage.setItem('learn:state', JSON.stringify(learnState));
+  } catch(e) {}
+}
+function loadReviewConfig() {
+  try {
+    const raw = localStorage.getItem('review:config');
+    if (raw) reviewConfig = { ...reviewConfig, ...JSON.parse(raw) };
+  } catch(e) {}
+  const el = document.getElementById('autoEnrollReview');
+  if (el) el.checked = !!reviewConfig.autoEnroll;
+}
+function saveReviewConfig() {
+  const el = document.getElementById('autoEnrollReview');
+  if (el) reviewConfig.autoEnroll = el.checked;
+  try {
+    localStorage.setItem('review:config', JSON.stringify(reviewConfig));
+  } catch(e) {}
+}
+// 设备时间异常跳变检测：只提示，绝不自动修改复习数据
+function checkTimeJump() {
+  try {
+    const nowTs = Date.now();
+    const raw = localStorage.getItem('app:lastOpen');
+    const HOUR = 3600 * 1000;
+    if (raw) {
+      const last = parseInt(raw, 10);
+      if (isFinite(last) && last > 0) {
+        const backMs = last - nowTs;            // 正数 = 时间被回拨
+        const jumpMs = Math.abs(nowTs - last);  // 绝对跳变幅度
+        if (backMs > 24 * HOUR) {
+          alert('检测到设备系统时间被回拨超过24小时，复习排期可能出现错乱，请核对系统时间。');
+        } else if (jumpMs > 60 * 24 * HOUR) {
+          alert('检测到设备系统时间发生大幅跳变（超过60天），复习排期可能出现错乱，请核对系统时间。');
+        }
+      }
+    }
+    localStorage.setItem('app:lastOpen', String(nowTs));
+  } catch(e) {}
+}
+
+// ================= Tab切换 =================
+tabBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const viewName = btn.dataset.view;
+    tabBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    Object.values(views).forEach(v => v.classList.remove('active'));
+    views[viewName].classList.add('active');
+    if (viewName === 'learning') refreshLearningList();
+    if (viewName === 'review') refreshReviewList();
+    if (viewName === 'library') renderLibrary();
+    if (viewName === 'settings') renderStorageMeter();
+  });
+});
+
+// ================= 复习视图 =================
+function getReviewQueue() {
+  const today = todayStr();
+  return customGroups
+    .filter(g => g.nextReviewDate && g.nextReviewDate <= today)
+    .sort((a, b) => (a.nextReviewDate || '').localeCompare(b.nextReviewDate || ''));
+}
+function refreshReviewList() {
+  // 重建快照时尽量保持当前正在看的组，避免索引错位（空白卡片/取错内容）
+  const curId = reviewState.snapshot[reviewState.index] || null;
+  reviewState.snapshot = getReviewQueue().map(g => g.id);
+  if (curId && reviewState.snapshot.includes(curId)) {
+    reviewState.index = reviewState.snapshot.indexOf(curId);
+  } else {
+    reviewState.index = 0;
+  }
+  renderReviewList();
+  renderReview();
+}
+// 复习页：列表总览渲染
+function renderReviewList() {
+  const queue = getReviewQueue();
+  const today = todayStr();
+  reviewProgress.textContent = queue.length + ' 组';
+  if (queue.length === 0) {
+    reviewList.innerHTML = '';
+    reviewEmpty.style.display = 'block';
+    return;
+  }
+  reviewEmpty.style.display = 'none';
+  reviewList.innerHTML = queue.map(g => {
+    let meta;
+    if (g.reviewStage === 0 && !g.lastReviewDate) {
+      meta = '阶段 0 · 首次复习';
+    } else {
+      const days = Math.round((new Date(today) - new Date(g.nextReviewDate)) / 86400000);
+      if (days > 0) meta = `阶段 ${g.reviewStage} · <span class="overdue">逾期 ${days} 天</span>`;
+      else if (days === 0) meta = `阶段 ${g.reviewStage} · 今天到期`;
+      else meta = `阶段 ${g.reviewStage} · 下次 ${g.nextReviewDate}`;
+    }
+    return `
+      <button class="review-list-row" data-review-gid="${escapeHtml(g.id)}">
+        <div>
+          <div class="review-row-name">${g.words.map(w => escapeHtml(w.term)).join(' / ')}</div>
+          <div class="review-row-meta">${meta}</div>
+        </div>
+        <i class="ti ti-chevron-right review-row-arrow"></i>
+      </button>`;
+  }).join('');
+}
+// 进入详情：点击列表行
+reviewList.addEventListener('click', (e) => {
+  const row = e.target.closest('[data-review-gid]');
+  if (!row) return;
+  const gid = row.getAttribute('data-review-gid');
+  const idx = reviewState.snapshot.indexOf(gid);
+  if (idx < 0) return;
+  reviewState.index = idx;
+  reviewListLayer.style.display = 'none';
+  reviewDetailLayer.style.display = 'block';
+  renderReview();
+});
+// 返回列表
+reviewBackBtn.addEventListener('click', () => {
+  reviewDetailLayer.style.display = 'none';
+  reviewListLayer.style.display = 'block';
+  refreshReviewList();
+});
+function renderReview() {
+  if (reviewState.index >= reviewState.snapshot.length) reviewState.index = Math.max(0, reviewState.snapshot.length - 1);
+  if (reviewState.snapshot.length === 0) {
+    reviewContent.innerHTML = '';
+    reviewNav.style.display = 'none';
+    reviewProgress.textContent = '0 组';
+    return;
+  }
+  reviewNav.style.display = 'flex';
+
+  const g = getGroupById(reviewState.snapshot[reviewState.index]);
+  if (!g) return;
+
+  const srsStrip = g.nextReviewDate
+    ? `复习阶段：${g.reviewStage} ｜ 下次复习：${g.nextReviewDate}`
+    : '尚未加入复习队列';
+  reviewContent.innerHTML = `<div class="srs-strip">${escapeHtml(srsStrip)}</div>` + g.words.map((w, i) => `
+    <div class="learn-block${i === g.words.length - 1 ? ' last' : ''}">
+      <div class="learn-term">${escapeHtml(w.term)}</div>
+      <div class="learn-line2"><span class="learn-prefix">区别</span> · ${escapeHtml(w.keyPoint)}</div>
+      <div class="learn-meaning">${escapeHtml(w.meaning)}</div>
+      ${w.example ? `<div class="learn-line3">例 · ${escapeHtml(w.example)}</div>` : ''}
+    </div>
+  `).join('');
+  reviewPrevBtn.disabled = reviewState.index === 0;
+  reviewNextBtn.disabled = reviewState.index >= reviewState.snapshot.length - 1;
+}
+// 已掌握：晋级 + 计算下次间隔
+function srsAdvance(g) {
+  g.reviewStage = (typeof g.reviewStage === 'number' ? g.reviewStage : 0) + 1;
+  g.lastReviewDate = todayStr();
+  g.nextReviewDate = addDays(todayStr(), reviewInterval(g.reviewStage));
+}
+// 没记住：阶段归零，但保留原排期——继续留在今日待复习列表反复刷；只有点已掌握才推进日期
+function srsReset(g) {
+  g.reviewStage = 0;
+  g.lastReviewDate = todayStr();
+  // nextReviewDate 保持不变
+}
+function reviewShowListIfEmpty() {
+  if (reviewState.snapshot.length === 0 && reviewDetailLayer.style.display !== 'none') {
+    reviewDetailLayer.style.display = 'none';
+    reviewListLayer.style.display = 'block';
+  }
+}
+reviewMasterBtn.addEventListener('click', () => {
+  const g = getGroupById(reviewState.snapshot[reviewState.index]);
+  if (!g) return;
+  srsAdvance(g);
+  g.words.forEach(w => masteredSet.add(g.id + '::' + w.term));
+  persistMasteredSet();
+  persistCustomGroups();
+  refreshReviewList();
+  reviewShowListIfEmpty();
+});
+reviewAgainBtn.addEventListener('click', () => {
+  const g = getGroupById(reviewState.snapshot[reviewState.index]);
+  if (!g) return;
+  srsReset(g);
+  g.words.forEach(w => masteredSet.delete(g.id + '::' + w.term));
+  persistMasteredSet();
+  persistCustomGroups();
+  // 留在今日复习列表，可继续看；下次进入复习页时自动按新排期重建
+  renderReview();
+});
+reviewPrevBtn.addEventListener('click', () => {
+  if (reviewState.index > 0) { reviewState.index--; renderReview(); }
+});
+reviewNextBtn.addEventListener('click', () => {
+  if (reviewState.index < reviewState.snapshot.length - 1) { reviewState.index++; renderReview(); }
+});
+reviewRefreshBtn.addEventListener('click', () => {
+  reviewDetailLayer.style.display = 'none';
+  reviewListLayer.style.display = 'block';
+  reviewState.index = 0;
+  refreshReviewList();
+});
+
+// ================= 学习视图 =================
+function typeOk(g, type) {
+  return type === '全部' || g.type === type;
+}
+function masteredOk(g, onlyUnmastered) {
+  return !onlyUnmastered || !isGroupAllMastered(g.id);
+}
+function buildSnapshot(mode) {
+  const st = learnState[mode];
+  let groups;
+  if (mode === 'A') {
+    // 完整词库：全部词组按拼音排序（allGroups已排序）
+    groups = allGroups.filter(g => typeOk(g, st.filterType) && masteredOk(g, st.filterMastered));
+  } else {
+    // 最近新增/改动：只取复盘词（非基础词），按 modifiedAt（无则 createdAt）倒序，最新在前
+    groups = customGroups
+      .filter(g => g.isBase !== true && typeOk(g, st.filterType) && masteredOk(g, st.filterMastered))
+      .sort((a, b) => ((b.modifiedAt || b.createdAt || 0)) - ((a.modifiedAt || a.createdAt || 0)));
+  }
+  st.snapshot = groups.map(g => g.id);
+  st.index = 0;
+}
+function refreshLearningList() {
+  const st = learnState[learnState.mode];
+  if (!st.snapshot.length) {
+    buildSnapshot(learnState.mode);
+  } else {
+    // 快照里被删除的组，自动跳过
+    st.snapshot = st.snapshot.filter(id => !!getGroupById(id));
+    if (st.index >= st.snapshot.length) st.index = Math.max(0, st.snapshot.length - 1);
+  }
+  renderLearning();
+}
+function renderLearning() {
+  const st = learnState[learnState.mode];
+  if (!st.snapshot.length) buildSnapshot(learnState.mode);
+
+  // 清理失效 id
+  st.snapshot = st.snapshot.filter(id => !!getGroupById(id));
+  if (st.index >= st.snapshot.length) st.index = Math.max(0, st.snapshot.length - 1);
+
+  if (st.snapshot.length === 0) {
+    learningContent.innerHTML = '';
+    learningEmpty.style.display = 'block';
+    learningNav.style.display = 'none';
+    learningProgress.textContent = '第 0 组 / 共 0 组';
+    learningEmpty.textContent = learnState.mode === 'B'
+      ? '还没有复盘词。刷题遇到的新词，用「AI批量导入-复盘新词」添加，就会出现在这里集中复习。'
+      : '词库还是空的，去「词库」添加新词吧。';
+    return;
+  }
+
+  learningEmpty.style.display = 'none';
+  learningNav.style.display = 'flex';
+
+  const g = getGroupById(st.snapshot[st.index]);
+  if (!g) { return; }
+
+  const allMastered = isGroupAllMastered(g.id);
+
+  // 顶部辅助信息合并为一行（第X组/共Y组 · 复习状态）
+  const srsText = g.nextReviewDate
+    ? `阶段 ${g.reviewStage} · 下次 ${g.nextReviewDate}`
+    : '尚未加入复习队列';
+  learningProgress.textContent = `第 ${st.index + 1} 组 / 共 ${st.snapshot.length} 组　·　${srsText}`;
+
+  const wordsHtml = g.words.map((w, i) => `
+    <div class="learn-block${i === g.words.length - 1 ? ' last' : ''}">
+      <div class="learn-term">${escapeHtml(w.term)}</div>
+      <div class="learn-line2"><span class="learn-prefix">区别</span> · ${escapeHtml(w.keyPoint)}</div>
+      <div class="learn-meaning">${escapeHtml(w.meaning)}</div>
+      ${w.example ? `<div class="learn-line3">例 · ${escapeHtml(w.example)}</div>` : ''}
+    </div>
+  `).join('');
+  learningContent.innerHTML = wordsHtml;
+
+  if (allMastered) {
+    masterBtn.textContent = '已掌握 ✓';
+    masterBtn.classList.add('mastered');
+  } else {
+    masterBtn.textContent = '标记已掌握';
+    masterBtn.classList.remove('mastered');
+  }
+  prevGroupBtn.disabled = st.index === 0;
+  nextGroupBtn.disabled = st.index >= st.snapshot.length - 1;
+}
+
+// 模式切换
+modeSwitchBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const mode = btn.dataset.mode;
+    if (learnState.mode === mode) return;
+    saveLearnState();
+    learnState.mode = mode;
+    if (!learnState[mode].snapshot.length) buildSnapshot(mode);
+    updateModeUI();
+    refreshLearningList();
+    saveLearnState();
+  });
+});
+function updateModeUI() {
+  modeSwitchBtns.forEach(b => b.classList.toggle('active', b.dataset.mode === learnState.mode));
+}
+
+// 翻页
+prevGroupBtn.addEventListener('click', () => {
+  const st = learnState[learnState.mode];
+  if (st.index > 0) { st.index--; renderLearning(); saveLearnState(); }
+});
+nextGroupBtn.addEventListener('click', () => {
+  const st = learnState[learnState.mode];
+  if (st.index < st.snapshot.length - 1) { st.index++; renderLearning(); saveLearnState(); }
+});
+
+// 标记已掌握（整组切换）
+masterBtn.addEventListener('click', () => {
+  const st = learnState[learnState.mode];
+  const g = getGroupById(st.snapshot[st.index]);
+  if (!g) return;
+  const allMastered = isGroupAllMastered(g.id);
+  g.words.forEach(w => {
+    const key = g.id + '::' + w.term;
+    if (allMastered) masteredSet.delete(key);
+    else masteredSet.add(key);
+  });
+  if (allMastered) {
+    // 取消掌握：若本次会话曾标记过，回退 SRS 三字段到标记前；无快照（刷新过）则只取消UI勾选
+    const snap = srsUndoSnapshots.get(g.id);
+    if (snap) {
+      g.reviewStage = snap.reviewStage;
+      g.lastReviewDate = snap.lastReviewDate;
+      g.nextReviewDate = snap.nextReviewDate;
+      srsUndoSnapshots.delete(g.id);
+    }
+  } else {
+    // 标记为已掌握：先存旧状态快照，再晋级复习排期
+    srsUndoSnapshots.set(g.id, {
+      reviewStage: g.reviewStage,
+      lastReviewDate: g.lastReviewDate,
+      nextReviewDate: g.nextReviewDate
+    });
+    g.reviewStage = (typeof g.reviewStage === 'number' ? g.reviewStage : 0) + 1;
+    g.lastReviewDate = todayStr();
+    g.nextReviewDate = addDays(todayStr(), reviewInterval(g.reviewStage));
+  }
+  persistMasteredSet();
+  persistCustomGroups();
+  renderLearning();
+});
+
+// 刷新队列
+learningRefreshBtn.addEventListener('click', () => {
+  const modeName = learnState.mode === 'A' ? '完整词库' : '最近新增/改动';
+  if (!confirm(`重新生成【${modeName}】背诵列表？当前进度将回到第 1 组。`)) return;
+  buildSnapshot(learnState.mode);
+  renderLearning();
+  saveLearnState();
+});
+
+// 筛选弹窗
+learningFilterBtn.addEventListener('click', () => {
+  const st = learnState[learnState.mode];
+  document.getElementById('filterType').value = st.filterType;
+  document.getElementById('filterMastered').checked = st.filterMastered;
+  filterModal.classList.add('open');
+});
+document.getElementById('filterCancelBtn').addEventListener('click', () => filterModal.classList.remove('open'));
+document.getElementById('filterConfirmBtn').addEventListener('click', () => {
+  const st = learnState[learnState.mode];
+  st.filterType = document.getElementById('filterType').value;
+  st.filterMastered = document.getElementById('filterMastered').checked;
+  buildSnapshot(learnState.mode);
+  filterModal.classList.remove('open');
+  renderLearning();
+  saveLearnState();
+});
+
+// ================= 弹窗统一关闭（× 按钮 / 点击遮罩） =================
+function closeModal(overlay) {
+  if (!overlay) return;
+  if (overlay.id === 'batchModal' && batchRunning) {
+    const statusEl = document.getElementById('batchStatusMsg');
+    if (statusEl) { statusEl.textContent = '解析进行中。如需中断请点「停止」，进度已实时保存。'; statusEl.className = 'status-msg'; }
+    return;
+  }
+  overlay.classList.remove('open');
+  if (overlay.id === 'editModal') editingGroupId = null;
+}
+document.querySelectorAll('.modal-close').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    closeModal(document.getElementById(btn.dataset.close));
+  });
+});
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) closeModal(overlay);
+  });
+});
+
+// ================= 词库渲染 =================
+function getFilteredLibrary() {
+  return allGroups.filter(g => {
+    const typeOk2 = currentType === '全部' || g.type === currentType;
+    const searchOk = matchesSearch(g, currentSearch);
+    const singleOk = !onlySingle || g.words.length === 1;
+    return typeOk2 && searchOk && singleOk;
+  });
+}
+document.getElementById('onlySingleBtn').addEventListener('click', () => {
+  onlySingle = !onlySingle;
+  document.getElementById('onlySingleBtn').classList.toggle('active', onlySingle);
+  renderLibrary();
+});
+function renderLibrary() {
+  const filtered = getFilteredLibrary();
+  if (filtered.length === 0) {
+    groupListEl.innerHTML = '';
+    emptyStateEl.style.display = 'block';
+    emptyStateEl.textContent = allGroups.length === 0
+      ? '词库还是空的，点击「新建词组」或「AI批量导入」开始添加'
+      : '没有找到匹配的词';
+    groupListEl.classList.remove('batch-mode');
+    return;
+  }
+  emptyStateEl.style.display = 'none';
+  groupListEl.innerHTML = filtered.map(g => renderGroupItem(g)).join('');
+  groupListEl.classList.toggle('batch-mode', batchMode);
+}
+function renderGroupItem(g) {
+  const forcedOpen = !!currentSearch && matchesSearch(g, currentSearch);
+  const isOpen = openGroups.has(g.id) || forcedOpen;
+  const termsHtml = g.words.map(w => escapeHtml(w.term)).join('<span class="sep">/</span>');
+  const bodyHtml = g.words.map(w => renderWordBlock(w)).join('');
+  const checked = selectedGroups.has(g.id) ? 'checked' : '';
+  const isMastered = masteredSet.has(g.id);
+  const singleTag = g.words.length === 1 ? '<span class="single-badge">单词语</span>' : '';
+
+  return `
+    <div class="group-item ${isOpen ? 'open' : ''} ${isMastered ? 'mastered' : ''}">
+      <input type="checkbox" class="batch-checkbox" data-gid="${escapeHtml(g.id)}" ${checked}>
+      <button class="group-head" data-group-head="${escapeHtml(g.id)}">
+        <span class="terms serif">${termsHtml}${singleTag}<span class="count-badge">${g.words.length}词</span>${isMastered ? '<i class="ti ti-circle-check mastered-mark" title="已掌握"></i>' : ''}</span>
+        <span class="meta">
+          <i class="ti ti-chevron-right chevron"></i>
+        </span>
+      </button>
+      <div class="group-body">${bodyHtml}</div>
+    </div>
+  `;
+}
+function renderWordBlock(w) {
+  return `
+    <div class="word-block">
+      <div class="word-block-head">
+        <div class="word-term">${escapeHtml(w.term)}</div>
+      </div>
+      <div class="word-meaning">${escapeHtml(w.meaning)}</div>
+      <div class="key-point">
+        <div class="label">核心区别</div>
+        <div class="text">${escapeHtml(w.keyPoint)}</div>
+      </div>
+      ${w.example ? `<div class="word-example">例：${escapeHtml(w.example)}</div>` : ''}
+    </div>
+  `;
+}
+
+// ================= 词库交互 =================
+groupListEl.addEventListener('click', (e) => {
+  const head = e.target.closest('[data-group-head]');
+  if (head && !batchMode) {
+    const gid = head.getAttribute('data-group-head');
+    if (openGroups.has(gid)) openGroups.delete(gid);
+    else openGroups.add(gid);
+    renderLibrary();
+    return;
+  }
+  const checkbox = e.target.closest('.batch-checkbox');
+  if (checkbox) {
+    const gid = checkbox.dataset.gid;
+    if (checkbox.checked) selectedGroups.add(gid);
+    else selectedGroups.delete(gid);
+    updateSelectedCount();
+    updateSelectAllBtn();
+  }
+});
+
+searchInput.addEventListener('input', (e) => {
+  currentSearch = e.target.value.trim();
+  renderLibrary();
+  if (batchMode) updateSelectAllBtn();
+});
+typeTabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    typeTabs.forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    currentType = tab.dataset.type;
+    renderLibrary();
+    if (batchMode) updateSelectAllBtn();
+  });
+});
+
+// 批量选择
+function resetSelectAllBtn() {
+  selectAllBtn.textContent = '全选';
+}
+function updateSelectAllBtn() {
+  const visible = getFilteredLibrary();
+  const all = visible.length > 0 && visible.every(g => selectedGroups.has(g.id));
+  selectAllBtn.textContent = all ? '取消全选' : '全选';
+}
+function setBatchUi(on) {
+  if (on) {
+    morePanel.classList.remove('open');
+    moreActionsBtn.classList.remove('active');
+    quickActionsEl.style.display = 'none';
+    batchActionsEl.classList.add('show');
+  } else {
+    quickActionsEl.style.display = '';
+    batchActionsEl.classList.remove('show');
+  }
+}
+// 更多操作：展开/收起面板
+moreActionsBtn.addEventListener('click', () => {
+  if (batchMode) return;
+  morePanel.classList.toggle('open');
+  moreActionsBtn.classList.toggle('active');
+});
+// 一键展开/收起全部：只作用于当前筛选列表
+let expandAllState = false;
+expandAllBtn.addEventListener('click', () => {
+  expandAllState = !expandAllState;
+  expandAllIcon.className = expandAllState ? 'ti ti-eye-off' : 'ti ti-eye';
+  const filtered = getFilteredLibrary();
+  filtered.forEach(g => {
+    if (expandAllState) openGroups.add(g.id);
+    else openGroups.delete(g.id);
+  });
+  renderLibrary();
+});
+// 批量选择：进入批量模式（整行按钮切换为单行批量操作栏）
+batchToggleBtn.addEventListener('click', () => {
+  batchMode = true;
+  selectedGroups.clear();
+  setBatchUi(true);
+  resetSelectAllBtn();
+  renderLibrary();
+  updateSelectedCount();
+});
+// 取消选择：退出批量模式
+cancelBatchBtn.addEventListener('click', () => {
+  batchMode = false;
+  selectedGroups.clear();
+  setBatchUi(false);
+  resetSelectAllBtn();
+  renderLibrary();
+});
+selectAllBtn.addEventListener('click', () => {
+  const visible = getFilteredLibrary();
+  const all = visible.length > 0 && visible.every(g => selectedGroups.has(g.id));
+  if (all) {
+    visible.forEach(g => selectedGroups.delete(g.id));
+    selectAllBtn.textContent = '全选';
+  } else {
+    visible.forEach(g => selectedGroups.add(g.id));
+    selectAllBtn.textContent = '取消全选';
+  }
+  renderLibrary();
+  updateSelectedCount();
+});
+toggleTypeBtn.addEventListener('click', () => {
+  if (selectedGroups.size === 0) { alert('请先选择要转换的词组'); return; }
+  const ids = [...selectedGroups];
+  let n = 0;
+  customGroups.forEach(g => {
+    if (ids.includes(g.id)) {
+      g.isBase = !(g.isBase === true);
+      g.modifiedAt = now();
+      n++;
+    }
+  });
+  if (n > 0) {
+    rebuildAllGroups();
+    persistCustomGroups();
+    refreshLearningList();
+  }
+  selectedGroups.clear();
+  resetSelectAllBtn();
+  renderLibrary();
+  updateSelectedCount();
+  alert(`已转换 ${n} 组词组的类型：基础词 ↔ 复盘词`);
+});
+
+function normTerms(g) {
+  return (g.words || []).map(w => String(w.term || '').replace(/\s+/g, '')).filter(t => t);
+}
+deleteBatchBtn.addEventListener('click', () => {
+  if (selectedGroups.size === 0) { alert('请先选择要删除的词组'); return; }
+  if (!confirm(`确定删除选中的 ${selectedGroups.size} 组词组？不可恢复。`)) return;
+  const ids = [...selectedGroups];
+  const before = customGroups.length;
+  customGroups = customGroups.filter(g => !ids.includes(g.id));
+  const count = before - customGroups.length;
+  // 清理已删除词组的「已掌握」标记，避免残留
+  ids.forEach(gid => {
+    [...masteredSet].forEach(key => {
+      if (key.indexOf(gid + '::') === 0) masteredSet.delete(key);
+    });
+  });
+  batchMode = false;
+  selectedGroups.clear();
+  setBatchUi(false);
+  resetSelectAllBtn();
+  if (count > 0) {
+    rebuildAllGroups();
+    persistCustomGroups();
+    persistMasteredSet();
+  }
+  renderLibrary();
+  refreshLearningList();
+  alert(`已删除 ${count} 组词组`);
+});
+function updateSelectedCount() {}
+
+// ================= 新建词组 =================
+document.getElementById('addNewBtn').addEventListener('click', () => {
+  initWordForm();
+  document.getElementById('addStatusMsg').textContent = '';
+  addModal.classList.add('open');
+});
+document.getElementById('cancelAddBtn').addEventListener('click', () => addModal.classList.remove('open'));
+function addWordFormBlock() {
+  if (formWordCount >= MAX_FORM_WORDS) return;
+  formWordCount++;
+  const container = document.getElementById('wordBlocks');
+  const div = document.createElement('div');
+  div.className = 'word-form-block';
+  div.innerHTML = `
+    <div class="wf-title">对比词 ${formWordCount}</div>
+    <div class="form-row"><label>词语</label><input type="text" class="wf-term" placeholder="如：不以为意" /></div>
+    <div class="form-row"><label>释义</label><textarea class="wf-meaning" placeholder="基本意思"></textarea></div>
+    <div class="form-row"><label>核心区别</label><textarea class="wf-keypoint" placeholder="易混淆的核心要点"></textarea></div>
+    <div class="form-row"><label>例句（可选）</label><input type="text" class="wf-example" placeholder="例句" /></div>
+  `;
+  container.appendChild(div);
+}
+function initWordForm() {
+  formWordCount = 0;
+  document.getElementById('wordBlocks').innerHTML = '';
+  addWordFormBlock();
+  addWordFormBlock();
+}
+document.getElementById('addWordLink').addEventListener('click', addWordFormBlock);
+document.getElementById('saveAddBtn').addEventListener('click', () => {
+  const statusEl = document.getElementById('addStatusMsg');
+  const type = document.getElementById('newType').value;
+  const blocks = document.querySelectorAll('#wordBlocks .word-form-block');
+  const words = [];
+  blocks.forEach(block => {
+    const term = block.querySelector('.wf-term').value.trim();
+    const meaning = block.querySelector('.wf-meaning').value.trim();
+    const keyPoint = block.querySelector('.wf-keypoint').value.trim();
+    const example = block.querySelector('.wf-example').value.trim();
+    if (term && meaning && keyPoint) words.push({ term, meaning, keyPoint, example });
+  });
+  if (words.length < 2) {
+    statusEl.textContent = '至少需要 2 个完整词条（词语、释义、核心区别必填）';
+    statusEl.className = 'status-msg error';
+    return;
+  }
+  const t = now();
+  customGroups.push(applyNewGroupSrs({ id: 'custom-' + t, type, createdAt: t, modifiedAt: t, isBase: false, words }));
+  rebuildAllGroups();
+  persistCustomGroups();
+  renderLibrary();
+  const saveBtn = document.getElementById('saveAddBtn');
+  saveBtn.disabled = true;
+  statusEl.textContent = '保存成功，已进入「最近新增/改动」背诵列表';
+  statusEl.className = 'status-msg';
+  setTimeout(() => {
+    addModal.classList.remove('open');
+    saveBtn.disabled = false;
+  }, 700);
+});
+
+// ================= 编辑词组 =================
+function openEditModal(gid) {
+  const g = getCustomGroupById(gid);
+  if (!g) return;
+  editingGroupId = gid;
+  let html = `
+    <div class="form-row">
+      <label>组别类型</label>
+      <select id="editType">
+        <option value="成语" ${g.type==='成语'?'selected':''}>成语</option>
+        <option value="实词" ${g.type==='实词'?'selected':''}>实词</option>
+      </select>
+    </div>
+  `;
+  g.words.forEach((w, idx) => {
+    html += `<div class="word-form-block">
+      <div class="wf-title">词条${idx+1}</div>
+      <div class="form-row"><label>词语</label><input class="e-term" value="${escapeHtml(w.term)}"></div>
+      <div class="form-row"><label>释义</label><textarea class="e-meaning">${escapeHtml(w.meaning)}</textarea></div>
+      <div class="form-row"><label>核心区别</label><textarea class="e-keypoint">${escapeHtml(w.keyPoint)}</textarea></div>
+      <div class="form-row"><label>例句</label><input class="e-example" value="${escapeHtml(w.example||'')}"></div>
+    </div>`;
+  });
+  document.getElementById('editModalBody').innerHTML = html;
+  editModal.classList.add('open');
+}
+document.getElementById('editCancelBtn').addEventListener('click', () => {
+  editModal.classList.remove('open');
+  editingGroupId = null;
+});
+document.getElementById('editSaveBtn').addEventListener('click', () => {
+  const g = getCustomGroupById(editingGroupId);
+  if (!g) return;
+  const newType = document.getElementById('editType').value;
+  const termEls = document.querySelectorAll('#editModalBody .e-term');
+  const meanEls = document.querySelectorAll('#editModalBody .e-meaning');
+  const kpEls = document.querySelectorAll('#editModalBody .e-keypoint');
+  const exEls = document.querySelectorAll('#editModalBody .e-example');
+  const words = [];
+  for (let i = 0; i < termEls.length; i++) {
+    const term = termEls[i].value.trim();
+    const meaning = meanEls[i].value.trim();
+    const keyPoint = kpEls[i].value.trim();
+    const example = exEls[i].value.trim();
+    if (term && meaning && keyPoint) words.push({ term, meaning, keyPoint, example });
+  }
+  if (words.length < 2) { alert('每组至少保留 2 个完整词条'); return; }
+  g.type = newType;
+  g.words = words;
+  g.modifiedAt = now();
+  rebuildAllGroups();
+  persistCustomGroups();
+  renderLibrary();
+  editModal.classList.remove('open');
+  editingGroupId = null;
+});
+
+// ================= 导入导出 =================
+document.getElementById('exportBtn').addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify(customGroups, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const d = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const stamp = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `易混词词库备份_${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+});
+document.getElementById('importBtn').addEventListener('click', () => document.getElementById('jsonFileInput').click());
+document.getElementById('jsonFileInput').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const text = await file.text();
+  try {
+    const arr = JSON.parse(text);
+    if (!Array.isArray(arr)) throw new Error('格式错误');
+    const t = now();
+    const merged = arr.map(g => {
+      const cg = { ...g, words: (g.words||[]).map(w=>({...w})) };
+      if (!cg.createdAt) cg.createdAt = t;
+      if (!cg.modifiedAt) cg.modifiedAt = t;
+      if (typeof cg.isBase !== 'boolean') cg.isBase = false;
+      if (!cg.id || cg.id.indexOf('custom-') !== 0) cg.id = 'custom-' + (t + Math.floor(Math.random()*1000));
+      return normalizeSrs(cg);
+    });
+    customGroups = [...customGroups, ...merged];
+    rebuildAllGroups();
+    persistCustomGroups();
+    renderLibrary();
+    alert(`成功导入 ${merged.length} 组`);
+  } catch(err) {
+    alert('导入失败：' + err.message);
+  }
+  e.target.value = '';
+});
+
+// 兼容不同模型返回格式：丢弃思考内容、清理markdown包裹、提取JSON片段
+function extractAiJson(message) {
+  const content = message && (message.content || message.reasoning_content || '');
+  if (typeof content !== 'string' || !content.trim()) {
+    throw new Error('AI返回内容为空，请重试');
+  }
+  try { return JSON.parse(content); } catch(e) {}
+  const cleaned = content.replace(/```json/gi, '').replace(/```/g, '').trim();
+  try { return JSON.parse(cleaned); } catch(e) {}
+  const s = cleaned.indexOf('{');
+  const e = cleaned.lastIndexOf('}');
+  if (s >= 0 && e > s) {
+    try { return JSON.parse(cleaned.slice(s, e + 1)); } catch(e2) {}
+  }
+  throw new Error('AI返回格式错误，请重试');
+}
+
+// ================= 批量AI解析 v3（本地预筛 → 关系对分组 → 瘦身审计 → 并行补全） =================
+const BATCH_CP_KEY = 'batch:taskV3';
+let batchAbortFlag = false;
+let batchRunning = false;
+
+function loadBatchCheckpoint() {
+  try {
+    const raw = localStorage.getItem(BATCH_CP_KEY);
+    if (!raw) return null;
+    const cp = JSON.parse(raw);
+    if (!cp || typeof cp !== 'object' || !cp.raw) return null;
+    return cp;
+  } catch(e) { return null; }
+}
+function saveBatchCheckpoint(cp) {
+  try { localStorage.setItem(BATCH_CP_KEY, JSON.stringify(cp)); }
+  catch(e) { warnStorageFullOnce(); }
+}
+function clearBatchCheckpoint() {
+  try { localStorage.removeItem(BATCH_CP_KEY); } catch(e) {}
+}
+function batchHasFailed(cp) {
+  return !!(cp && cp.p2 && cp.p2.errors && Object.keys(cp.p2.errors).length);
+}
+
+// —— 并查集：把"谁和谁一伙"的关系对自动聚合成组 ——
+function makeUF() {
+  const p = new Map();
+  const find = (x) => { let r = x; while (p.get(r) !== r) r = p.get(r); while (p.get(x) !== r) { const n = p.get(x); p.set(x, r); x = n; } return r; };
+  return {
+    add(x) { if (!p.has(x)) p.set(x, x); },
+    union(a, b) { this.add(a); this.add(b); const ra = find(a), rb = find(b); if (ra !== rb) p.set(ra, rb); },
+    find,
+    groups() {
+      const m = new Map();
+      for (const k of p.keys()) { const r = find(k); if (!m.has(r)) m.set(r, []); m.get(r).push(k); }
+      return [...m.values()];
+    }
+  };
+}
+// 组类型按字数推断：以四字词为主→成语，否则实词
+function inferType(terms) {
+  const four = terms.filter(t => t.length >= 4).length;
+  return four * 2 >= terms.length ? '成语' : '实词';
+}
+function bigrams(w) {
+  const s = new Set();
+  for (let i = 0; i < w.length - 1; i++) s.add(w.slice(i, i + 2));
+  if (w.length === 1) s.add(w);
+  return s;
+}
+
+// —— 通用单次AI调用（response_format降级；5分钟超时防挂死） ——
+async function callAiOnce(systemPrompt, opts) {
+  opts = opts || {};
+  if (!aiConfig.apiKey) throw new Error('请先在「设置」中填入 API Key');
+  const body = {
+    model: aiConfig.model,
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: opts.userMsg || '请分析并返回JSON' }
+    ],
+    temperature: opts.temperature != null ? opts.temperature : 0.2,
+    response_format: { type: 'json_object' },
+    max_tokens: opts.maxTokens || 4096
+  };
+  if (aiConfig.extraParams) {
+    try { Object.assign(body, JSON.parse(aiConfig.extraParams)); }
+    catch(e) { throw new Error('自定义附加请求参数不是合法JSON，请到「设置」检查'); }
+  }
+  const doFetch = () => {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 300000);
+    return fetch(aiConfig.apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${aiConfig.apiKey}` },
+      body: JSON.stringify(body),
+      signal: ctrl.signal
+    }).finally(() => clearTimeout(timer));
+  };
+  // 请求循环：429/5xx/网络异常指数退避重试（适配高并发限流），response_format 不兼容时降级重试
+  const backoff = (a) => new Promise(r => setTimeout(r, 2000 * a + Math.random() * 800));
+  for (let lenRetry = 0; ; lenRetry++) {
+  let res = null;
+  let attempt = 0;
+  while (true) {
+    try {
+      res = await doFetch();
+    } catch (netErr) {
+      if (++attempt > 3) throw new Error('网络异常：' + (netErr && netErr.message || netErr));
+      await backoff(attempt);
+      continue;
+    }
+    if (res.ok) break;
+    const errText = await res.text();
+    const low = errText.toLowerCase();
+    if (res.status === 429 || res.status >= 500) {
+      if (++attempt > 3) throw new Error('接口限流/繁忙（' + res.status + '），已多次退避重试仍失败');
+      await backoff(attempt);
+      continue;
+    }
+    if (low.includes('response_format') || low.includes('response format') || low.includes('json_schema')) {
+      delete body.response_format;
+      if (++attempt > 3) throw new Error('接口调用失败：' + res.status + ' ' + errText.slice(0, 120));
+      continue;
+    }
+    if (low.includes('max_tokens') || low.includes('maximum context') || low.includes('context length') || (low.includes('token') && low.includes('limit'))) {
+      throw new Error('请求失败：token 超出模型上限，请到「设置」调小每批词数或 max_tokens');
+    }
+    throw new Error('接口调用失败：' + res.status + ' ' + errText.slice(0, 120));
+  }
+  const data = await res.json();
+  const choice = data.choices && data.choices[0];
+  if (!choice || !choice.message) throw new Error('接口返回异常，请重试');
+  const content = typeof choice.message.content === 'string' ? choice.message.content : '';
+  if (choice.finish_reason === 'length' || !content.trim()) {
+    if (lenRetry < 2) { await new Promise(r => setTimeout(r, 800 + Math.random() * 600)); continue; }
+    throw new Error(content.trim() ? 'AI输出被截断（思考+内容超出max_tokens），请到「设置」调大 max_tokens 或调小每批词数' : 'AI返回了空内容，已重试多次仍失败，请重试');
+  }
+  return extractAiJson(choice.message);
+  }
+}
+
+// —— 并发控制器：n路工作池，任一任务抛错则整体抛错 ——
+async function runPool(n, tasks, onOneDone) {
+  const results = new Array(tasks.length).fill(undefined);
+  let idx = 0;
+  let done = 0;
+  const workers = Array.from({ length: Math.max(1, Math.min(n, tasks.length)) }, async () => {
+    while (idx < tasks.length) {
+      if (batchAbortFlag) throw new Error('已停止');
+      const i = idx++;
+      results[i] = await tasks[i]();
+      done++;
+      if (onOneDone) onOneDone(done, tasks.length);
+    }
+  });
+  await Promise.all(workers);
+  return results;
+}
+
+// —— 阶段0：本地拆词 ——
+function extractWordsLocal(text) {
+  const parts = String(text).split(/[\s,，、;；。.！!？?：:；（）()【】\[\]「」『』"'“”·…—\-|\/\\]+/).map(s => s.trim()).filter(Boolean);
+  const words = [];
+  const proseFrags = [];
+  for (const p of parts) {
+    if (!/[\u4e00-\u9fff]/.test(p)) continue;
+    if (p.length > 8) { proseFrags.push(p); continue; }
+    const w = p.replace(/^(?:第?[0-9一二三四五六七八九十]{1,3}[、.．)）:：,，])/, '').trim();
+    if (w.length >= 2 && w.length <= 8 && /[\u4e00-\u9fff]/.test(w)) words.push(w);
+  }
+  return { words, proseFrags };
+}
+
+// —— 阶段0.5：讲义长片段 → AI只提取考点词表 ——
+async function extractWordsFromProse(proseFrags, onNote) {
+  const chunks = [];
+  let cur = '';
+  for (const f of proseFrags) {
+    if (cur && (cur + f).length > 2500) { chunks.push(cur); cur = f; }
+    else cur = cur ? cur + '\n' + f : f;
+  }
+  if (cur) chunks.push(cur);
+  const out = [];
+  const seen = new Set();
+  for (let i = 0; i < chunks.length; i++) {
+    if (batchAbortFlag) throw new Error('已停止');
+    onNote && onNote(i + 1, chunks.length);
+    const sys = `你是公考言语理解讲师。从下面的讲义/文本中，提取所有作为「词语/成语辨析考点」出现的词语和成语（只提取词本身，不要释义、不要普通叙述性词语）。
+要求：只输出JSON数组，如 ["水到渠成","一举两得"]；没有可提取的词时输出 []。不要输出任何解释。
+文本：
+"""${chunks[i]}"""`;
+    const res = await callAiOnce(sys, { maxTokens: 3072, temperature: 0.1 });
+    const arr = Array.isArray(res) ? res : (Array.isArray(res.words) ? res.words : []);
+    for (const w of arr) {
+      const t = String(w || '').trim();
+      if (t.length >= 2 && t.length <= 8 && /[\u4e00-\u9fff]/.test(t) && !seen.has(t)) { seen.add(t); out.push(t); }
+    }
+  }
+  return out;
+}
+
+// —— 预筛：库内已有词跳过；形近库组进摘要（2-gram重叠）+ 全部单词语库组 ——
+function prefilterWords(words) {
+  const libTermMap = new Map();
+  customGroups.forEach(g => normTerms(g).forEach(t => { if (!libTermMap.has(t)) libTermMap.set(t, g.id); }));
+  const fresh = [];
+  const skipped = [];
+  const seen = new Set();
+  words.forEach(w => {
+    if (libTermMap.has(w)) { skipped.push(w); return; }
+    if (!seen.has(w)) { seen.add(w); fresh.push(w); }
+  });
+  const freshBG = new Set();
+  fresh.forEach(w => bigrams(w).forEach(b => freshBG.add(b)));
+  const scored = [];
+  customGroups.forEach(g => {
+    const terms = normTerms(g);
+    if (!terms.length) return;
+    let hit = 0;
+    terms.forEach(t => bigrams(t).forEach(b => { if (freshBG.has(b)) hit++; }));
+    if (hit > 0) scored.push({ id: g.id, terms, hit });
+  });
+  scored.sort((a, b) => b.hit - a.hit);
+  const digest = scored.slice(0, 120);
+  const digestIds = new Set(digest.map(d => d.id));
+  // 单词语库组无条件进摘要（最需要被新搭档激活）
+  customGroups.forEach(g => {
+    const t = normTerms(g);
+    if (t.length === 1 && !digestIds.has(g.id)) { digest.push({ id: g.id, terms: t, hit: 0 }); digestIds.add(g.id); }
+  });
+  return { fresh, skipped, digest };
+}
+
+// —— 阶段1：关系对分组（并发3 + 跨批词表视图） ——
+async function runGrouping(fresh, digest, cp, setStat) {
+  const chunkSize = Math.min(40, Math.max(20, aiConfig.chunkSize || 80));
+  const chunks = [];
+  for (let i = 0; i < fresh.length; i += chunkSize) chunks.push(fresh.slice(i, i + chunkSize));
+  cp.p1 = cp.p1 || { chunkResults: {}, libMerges: {} };
+  updateBatchBar(1, Object.keys(cp.p1.chunkResults).length, chunks.length);
+  const digestLine = digest.length
+    ? digest.map((d, i) => 'L' + (i + 1) + '：' + d.terms.join('/')).join('\n')
+    : '（词库暂无可归并的组）';
+  const digestTagMap = {};
+  digest.forEach((d, i) => { digestTagMap['L' + (i + 1)] = d; });
+  const allWordsLine = fresh.join('、');
+  const total = chunks.length;
+
+  const tasks = chunks.map((chunkWords, ci) => async () => {
+    if (cp.p1.chunkResults[ci]) return;
+    if (batchAbortFlag) throw new Error('已停止');
+    let lastErr = null;
+    for (let a = 0; a < 2; a++) {
+      if (batchAbortFlag) throw new Error('已停止');
+      try {
+        const sys = `你是公考行测言语理解「逻辑填空」易混词辨析专家，熟悉历年真题高频易混词考点。
+
+任务：从「本批词语」中找出互为易混词的词，输出易混关系对。只找关系，不写释义。
+
+易混判定（公考标准）：
+1. 同对的词必须语义相近但侧重点/感情色彩/搭配对象不同，或形近音近，且是公考逻辑填空常考的对比选项（如：不谋而合/不约而同；耳提面命/谆谆教诲；南辕北辙/背道而驰——通常可出现在同一道逻辑填空的选项中）。
+2. 语义无关的词不要出现在任何 pair 里（它们会自动单独成组）。拿不准的不要输出，宁可少配。
+3. 每对 2-5 个词，词必须原样从词表中复制。
+4. 「词库已有组」中若有与本批词语构成易混关系的组，把该词写进 lib（值填对应 L 标记），不要写进 pairs——新词会归入词库的那一组。
+5. 「本次任务其他批次的词」里若有与本批词易混的，也可以直接组成 pair（跨批配对，词面原样复制）。
+
+输出严格JSON（不要解释）：
+{"pairs":[["不谋而合","不约而同"],["南辕北辙","背道而驰"]],"lib":{"望其项背":"L3"}}
+没有可配对的就输出 {"pairs":[],"lib":{}}。
+
+词库已有组（新词与之易混时填入 lib）：
+${digestLine}
+
+本次任务全部词语（供跨批配对参考）：
+${allWordsLine}
+
+本批词语（重点分析这些）：
+${chunkWords.join('、')}`;
+        const res = await callAiOnce(sys, { maxTokens: 16384, temperature: 0.2 });
+        cp.p1.chunkResults[ci] = { pairs: Array.isArray(res.pairs) ? res.pairs : [], lib: res.lib || {} };
+        saveBatchCheckpoint(cp);
+        return;
+      } catch(e) { lastErr = e; }
+    }
+    throw lastErr;
+  });
+
+  await runPool(6, tasks, (done) => {
+    setStat(`阶段1/3 关系分组：已完成 ${done}/${total} 批……`);
+    updateBatchBar(1, done, total);
+  });
+
+  // 聚合：并查集 + 库归并
+  const uf = makeUF();
+  fresh.forEach(w => uf.add(w));
+  const libMerges = cp.p1.libMerges || {};
+  const freshSet = new Set(fresh);
+  for (const ci of Object.keys(cp.p1.chunkResults)) {
+    const res = cp.p1.chunkResults[ci];
+    (res.pairs || []).forEach(pair => {
+      const ws = (Array.isArray(pair) ? pair : []).map(t => String(t || '').trim()).filter(t => freshSet.has(t));
+      for (let i = 1; i < ws.length; i++) uf.union(ws[0], ws[i]);
+    });
+    const lib = res.lib || {};
+    Object.keys(lib).forEach(w => {
+      const d = digestTagMap[String(lib[w])];
+      if (d && freshSet.has(w) && !d.terms.includes(w)) {
+        d.terms.push(w);
+        (libMerges[d.id] = libMerges[d.id] || []).push(w);
+      }
+    });
+  }
+  cp.p1.libMerges = libMerges;
+  const groups = uf.groups().map(terms => ({ type: inferType(terms), terms })).filter(g => g.terms.length);
+  return { groups, libMerges };
+}
+
+// —— 阶段1.5：瘦身审计（只审单词语/2词组；并发3；输出merge关系对） ——
+async function runAudit(groups, cp, setStat) {
+  cp.p15 = cp.p15 || { sliceResults: {}, libMerges2: {} };
+  const multi = groups.filter(g => g.terms.length >= 3);
+  const smallIdx = groups.map((g, i) => i).filter(i => groups[i].terms.length <= 2);
+  if (!smallIdx.length) { updateBatchBar(2, 0, 0); return { groups, libMerges: cp.p1.libMerges || {} }; }
+  const slices = [];
+  for (let i = 0; i < smallIdx.length; i += 10) slices.push(smallIdx.slice(i, i + 10));
+  updateBatchBar(2, Object.keys(cp.p15.sliceResults).length, slices.length);
+  const multiLine = multi.length ? multi.map(g => g.terms.join('/')).join('\n') : '（无）';
+  // 全量库摘要（仅词面，兜底语义归并）
+  const libAllLine = customGroups.length
+    ? customGroups.map(g => normTerms(g).join('/')).filter(s => s).join('　')
+    : '（词库为空）';
+  const libIdByTerms = new Map();
+  customGroups.forEach(g => { const t = normTerms(g).join('§'); if (t) libIdByTerms.set(t, g.id); });
+  const total = slices.length;
+
+  const tasks = slices.map((slice, si) => async () => {
+    if (cp.p15.sliceResults[si]) return;
+    if (batchAbortFlag) throw new Error('已停止');
+    const segLines = slice.map((gi, k) => {
+      const g = groups[gi];
+      return 'A' + (k + 1) + '：' + g.terms.join('/');
+    }).join('\n');
+    let lastErr = null;
+    for (let a = 0; a < 2; a++) {
+      if (batchAbortFlag) throw new Error('已停止');
+      try {
+        const sys = `你是公考行测言语理解「逻辑填空」易混词辨析专家。下面这些小组是自动分组产生的，可能存在：本该同属一个考点的词被拆散在不同组、单词语其实与某组易混、词被放错组。
+
+任务：找出应该合并/纠正的关系，输出关系对。只输出关系，不重组整组。
+1. merges：每项 [词A,词B]，表示这两个词应属同一考点组（词A、词B来自不同小组，或之一来自已确认组）。2-5个词一组时可用多项表达，如 ["词A","词B","词C"]。
+2. lib：若某词其实应并入「词库已有组」，写 {"词":"所在库组的完整词组"}，值必须从「词库全部组」里原样复制一个完整词组。
+3. 语义无关的不要强行输出。宁可少输出，不要错配。
+4. 只处理「待审小组」里的词，词面原样复制。
+
+输出严格JSON（不要解释）：
+{"merges":[["词A","词B"]],"lib":{"某词":"某词/某词2/某词3"}}
+没有要调整的输出 {"merges":[],"lib":{}}。
+
+已确认组（3词以上，默认正确，仅供对照）：
+${multiLine}
+
+待审小组：
+${segLines}
+
+词库全部组（lib 的值必须从这里原样复制）：
+${libAllLine}`;
+        const res = await callAiOnce(sys, { maxTokens: 8192, temperature: 0.2 });
+        cp.p15.sliceResults[si] = { merges: Array.isArray(res.merges) ? res.merges : [], lib: res.lib || {} };
+        saveBatchCheckpoint(cp);
+        return;
+      } catch(e) { lastErr = e; }
+    }
+    throw lastErr;
+  });
+
+  await runPool(6, tasks, (done) => {
+    setStat(`阶段2/3 归并审计：已完成 ${done}/${total} 片……`);
+    updateBatchBar(2, done, total);
+  });
+
+  // 应用：组索引级并查集 + 库归并
+  const uf = makeUF();
+  groups.forEach((g, i) => uf.add('g' + i));
+  const libMerges = cp.p1.libMerges || {};
+  const libMerges2 = cp.p15.libMerges2 || {};
+  for (const si of Object.keys(cp.p15.sliceResults)) {
+    const res = cp.p15.sliceResults[si];
+    (res.merges || []).forEach(pair => {
+      const ws = (Array.isArray(pair) ? pair : []).map(t => String(t || '').trim()).filter(Boolean);
+      const idxs = ws.map(w => groups.findIndex(g => g.terms.includes(w))).filter(i => i >= 0);
+      for (let i = 1; i < idxs.length; i++) uf.union('g' + idxs[0], 'g' + idxs[i]);
+    });
+    const lib = res.lib || {};
+    Object.keys(lib).forEach(w => {
+      const termsKey = String(lib[w]).split('/').map(s => s.trim()).join('§');
+      const gid = libIdByTerms.get(termsKey);
+      const inGroup = groups.some(g => g.terms.includes(w));
+      if (gid && inGroup) (libMerges2[gid] = libMerges2[gid] || []).push(w);
+    });
+  }
+  cp.p15.libMerges2 = libMerges2;
+  // 聚合新组
+  const merged = uf.groups().map(nodes => {
+    const terms = [];
+    nodes.forEach(n => { groups[parseInt(n.slice(1), 10)].terms.forEach(t => { if (!terms.includes(t)) terms.push(t); }); });
+    return { type: inferType(terms), terms };
+  });
+  const finalGroups = [];
+  merged.forEach(g => finalGroups.push({ type: inferType(g.terms), terms: g.terms }));
+  const allLib = Object.assign({}, libMerges, libMerges2);
+  return { groups: finalGroups, libMerges: allLib };
+}
+
+// —— 阶段2：分批补全（并发3，每批15词） ——
+function buildPhase2Batches(entries) {
+  const batches = [];
+  let cur = [], curWords = 0;
+  for (const e of entries) {
+    if (curWords && curWords + e.terms.length > 15) { batches.push(cur); cur = []; curWords = 0; }
+    cur.push(e); curWords += e.terms.length;
+  }
+  if (cur.length) batches.push(cur);
+  return batches;
+}
+
+async function fillPhase2Batch(batch) {
+  const listing = batch.map((e, i) => '组' + (i + 1) + '（' + e.type + '）：' + e.terms.join(' / ')).join('\n');
+  const wordCount = batch.reduce((a, e) => a + e.terms.length, 0);
+  const sys = `你是公考行测言语理解「逻辑填空」词语辨析专家。为下列每组词语按公考考点补全内容。
+
+要求：
+1. term：原样返回输入词语，不得改写；以完整的词/成语为单位分析，绝不拆成单个汉字逐字解释。
+2. meaning：简明词典义，25字内。
+3. keyPoint：这个词语的"使用画像"——一整句连贯白话，70字内，让考生只看这一条就能决定逻辑填空该不该选它。内部从五个维度分析：词义侧重、感情色彩、搭配对象、语义轻重、语法功能；只写与同组其他词有差异的维度，差异必须具体到能直接做题（具体搭配对象、明确的褒贬、语法限制、经典易错本义）。维度融在句子里，不加标签、不写"与某词相比"、不写"侧重点不同"这类空洞话。单词语组则写该词的易错考点。
+4. example：用该词造一个逻辑填空风格例句，35字内，用法必须正确。
+5. 保持分组不变，每个完整的词/成语各输出一条（不要按字拆分），只输出JSON（不要解释）：
+{"groups":[{"t":"成语","words":[{"term":"","meaning":"","keyPoint":"","example":""}]}]}
+
+keyPoint 合格示范（照这个水准写）：
+推脱 → 只用于推卸自己该负的责任和罪责，含贬义，不能用来拒绝邀请。
+推托 → 指借故婉拒别人的请求或邀请，如推托有事，不含推卸责任之义。
+差强人意 → 指大体上还算令人满意（差=稍微），是褒义词，误解为不满意是高频错误。
+首当其冲 → 指最先遭受攻击或灾难，是被动受害，绝不能理解为首先带头。
+望其项背 → 指能赶得上，多用于否定式，肯定式用法是错的。
+屡试不爽 → 指屡次试验都没有差错（爽=违背），不是屡次失败，别望文生义。
+空穴来风 → 本指消息有根据并非无中生有，做题时优先按有根据理解。
+耳提面命 → 形容长辈恳切地教导，只用于长辈对晚辈，平辈之间不能用。
+蔚然成风 → 指好的风气逐渐形成，含褒义，只能形容好现象，不能形容坏风气。
+
+待填写词组：
+${listing}`;
+  return await callAiOnce(sys, { maxTokens: Math.max(4096, Math.min(8192, wordCount * 260 + 2500)), temperature: 0.3 });
+}
+
+async function runPhase2Fill(entries, cp, setStat) {
+  const batches = buildPhase2Batches(entries);
+  cp.p2 = cp.p2 || {};
+  cp.p2.results = cp.p2.results || {};
+  cp.p2.errors = cp.p2.errors || {};
+  const results = cp.p2.results;
+  const total = batches.length;
+  updateBatchBar(3, Object.keys(results).length, total);
+  const tasks = batches.map((batch, bi) => async () => {
+    if (results[bi]) return;
+    if (batchAbortFlag) throw new Error('已停止');
+    let lastErr = null;
+    for (let a = 0; a < 2; a++) {
+      if (batchAbortFlag) throw new Error('已停止');
+      try {
+        const res = await fillPhase2Batch(batch);
+        results[bi] = Array.isArray(res) ? res : (Array.isArray(res.groups) ? res.groups : []);
+        delete cp.p2.errors[bi];
+        saveBatchCheckpoint(cp);
+        return;
+      } catch(e) { lastErr = e; }
+    }
+    cp.p2.errors[bi] = String((lastErr && lastErr.message) || lastErr);
+    saveBatchCheckpoint(cp);
+  });
+  await runPool(6, tasks, (done) => {
+    setStat(`阶段3/3 补全释义/考点/例句：已完成 ${done}/${total} 批……`);
+    updateBatchBar(3, done, total);
+  });
+  const failedIdx = [];
+  for (let bi = 0; bi < total; bi++) if (!results[bi]) failedIdx.push(bi);
+  return { batches, results, failedIdx };
+}
+
+// 组装最终导入清单（term按词面映射防错位；失败批词语内容留空）
+function assembleImportList(entries, batches, results) {
+  const out = [];
+  batches.forEach((batch, bi) => {
+    const glist = results[bi] || [];
+    batch.forEach((e, ei) => {
+      const g = glist[ei];
+      let words;
+      if (g && Array.isArray(g.words) && g.words.length) {
+        const byTerm = {};
+        g.words.forEach(w => { if (w && w.term) byTerm[String(w.term).replace(/\s+/g, '')] = w; });
+        words = e.terms.map(t => {
+          const hit = byTerm[t] || {};
+          return {
+            term: t,
+            meaning: String(hit.meaning || '').trim(),
+            keyPoint: String(hit.keyPoint || '').trim(),
+            example: String(hit.example || '').trim()
+          };
+        });
+      } else {
+        words = e.terms.map(t => ({ term: t, meaning: '', keyPoint: '', example: '' }));
+      }
+      out.push({ type: e.type || (g && g.t) || '实词', words, matchTargetGroupId: e.libTargetId || null });
+    });
+  });
+  return out;
+}
+
+// 生成阶段2任务清单：{type, terms, libTargetId}
+// 注意：已标记归入库组的词必须从新组中剔除，否则同一词会重复导入
+function buildPhase2Entries(auditGroups, libMerges) {
+  const libWords = new Set();
+  Object.values(libMerges || {}).forEach(arr => (arr || []).forEach(t => libWords.add(t)));
+  const entries = (auditGroups || [])
+    .filter(g => g && g.terms && g.terms.length)
+    .map(g => ({ type: g.type || '实词', terms: g.terms.filter(t => !libWords.has(t)), libTargetId: null }))
+    .filter(g => g.terms.length > 0);
+  Object.keys(libMerges || {}).forEach(id => {
+    const g = getCustomGroupById(id);
+    const room = g ? Math.max(0, MAX_FORM_WORDS - g.words.length) : MAX_FORM_WORDS;
+    const gTerms = g ? normTerms(g) : [];
+    const terms = (libMerges[id] || []).filter(t => !gTerms.includes(t)).slice(0, room);
+    if (terms.length) entries.push({ type: g ? g.type : '实词', terms, libTargetId: id });
+  });
+  return entries;
+}
+
+// ===== 总进度（动态阶段权重） =====
+// 进度% = 已完成单元的预估耗时 / 全部单元的预估耗时。
+// 单元耗时先用经验种子值，阶段跑起来后按实际完成速度（EMA）动态修正，越跑越准；
+// 未开始阶段的单元数按词语数推算，阶段开始后替换为真实值；配合单调钳制，进度只进不退。
+const BATCH_UNIT_SEED = { 0: 15, 1: 12, 2: 8, 3: 12 }; // 每单元预估墙钟秒（6路并发）：提词/分组/审计/补全，运行后按EMA实测修正
+let batchProg = null;
+function initBatchProgress(words) {
+  if (!batchProg) {
+    batchProg = { words: 100, maxPct: 0, units: {} };
+    for (let ph = 0; ph <= 3; ph++) batchProg.units[ph] = { total: 0, done: 0, ema: 0, lastT: 0 };
+  }
+  if (words) batchProg.words = words;
+}
+function batchUnitTotal(ph) {
+  const u = batchProg.units[ph];
+  if (u.total) return u.total;
+  if (ph === 2) return Math.ceil(batchProg.words / 45); // 审计：每片10个小组、小组约占词数2/5
+  if (ph === 3) return Math.ceil(batchProg.words / 15); // 补全：每批15词（A/B实测20词批有截断劣化风险）
+  return 0;
+}
+function updateBatchBar(phase, done, total) {
+  if (!batchProg) initBatchProgress(100);
+  const u = batchProg.units[phase];
+  u.total = total; // 0 表示该阶段不存在（如无审计），从计划中剔除
+  if (done > u.done) {
+    const now = Date.now();
+    if (u.lastT) {
+      const dt = (now - u.lastT) / 1000 / (done - u.done);
+      u.ema = u.ema ? u.ema * 0.6 + dt * 0.4 : dt;
+    }
+    u.lastT = now;
+  }
+  u.done = done;
+  recalcBatchProgress();
+}
+function recalcBatchProgress() {
+  const P = batchProg;
+  let doneW = 0, totalW = 0, remain = 0;
+  for (let ph = 0; ph <= 3; ph++) {
+    const t = batchUnitTotal(ph);
+    if (!t) continue;
+    const w = P.units[ph].ema || BATCH_UNIT_SEED[ph];
+    totalW += t * w;
+    doneW += Math.min(P.units[ph].done, t) * w;
+    remain += Math.max(0, t - P.units[ph].done) * w;
+  }
+  let pct = totalW ? Math.round(doneW / totalW * 100) : 0;
+  pct = Math.min(100, Math.max(pct, P.maxPct));
+  P.maxPct = pct;
+  document.getElementById('batchProgressFill').style.width = pct + '%';
+  let etaText = '';
+  if (remain >= 90) etaText = ' · 约' + Math.ceil(remain / 60) + '分钟';
+  else if (remain > 15) etaText = ' · 约' + Math.max(1, Math.ceil(remain / 10)) * 10 + '秒';
+  document.getElementById('batchProgressText').textContent = pct + '%' + etaText;
+  if (batchRunning) document.title = pct + '% · 易混词背诵';
+}
+// 批量结束后恢复标题
+function restoreBatchTitle() {
+  document.title = '易混词背诵';
+}
+// 系统通知（页面在前台时不打扰）
+function notifyBatch(title, body) {
+  try {
+    if (document.hasFocus()) return;
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    new Notification(title, { body, tag: 'batch' });
+  } catch(e) {}
+}
+function requestNotifyPermission() {
+  try {
+    if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
+  } catch(e) {}
+}
+
+window.addEventListener('beforeunload', (e) => {
+  if (batchRunning) { e.preventDefault(); e.returnValue = ''; }
+});
+
+document.getElementById('batchImportBtn').addEventListener('click', () => {
+  document.getElementById('batchRawText').value = '';
+  const statusEl = document.getElementById('batchStatusMsg');
+  statusEl.textContent = '';
+  statusEl.className = 'status-msg';
+  document.getElementById('batchPreviewWrap').classList.remove('open');
+  document.getElementById('batchProgressWrap').classList.remove('show');
+  document.getElementById('batchProgressFill').style.width = '0%';
+  document.getElementById('batchProgressText').textContent = '0%';
+  document.getElementById('batchRetryBtn').style.display = 'none';
+  batchParsedResult = null;
+  const cp = loadBatchCheckpoint();
+  const bar = document.getElementById('batchResumeBar');
+  if (cp && (!cp.done || batchHasFailed(cp))) {
+    const stage = cp.p2 ? '补全内容' : (cp.p15 ? '归并审计' : (cp.p1 ? '关系分组' : '提取词语'));
+    document.getElementById('batchResumeText').textContent = `检测到未完成任务：约 ${cp.wordCount || '?'} 个新词，中断于「${stage}」阶段，可继续或放弃。`;
+    bar.style.display = 'block';
+  } else {
+    bar.style.display = 'none';
+  }
+  document.getElementById('batchParseBtn').disabled = batchRunning;
+  document.getElementById('batchRetryBtn').disabled = batchRunning;
+  batchModal.classList.add('open');
+});
+
+document.getElementById('batchResumeBtn').addEventListener('click', () => {
+  const cp = loadBatchCheckpoint();
+  if (!cp) return;
+  document.getElementById('batchRawText').value = cp.raw || '';
+  document.getElementById('batchResumeBar').style.display = 'none';
+  document.getElementById('batchParseBtn').click();
+});
+document.getElementById('batchResumeDropBtn').addEventListener('click', () => {
+  clearBatchCheckpoint();
+  document.getElementById('batchResumeBar').style.display = 'none';
+});
+document.getElementById('batchStopBtn').addEventListener('click', () => {
+  if (batchRunning) {
+    batchAbortFlag = true;
+    const statusEl = document.getElementById('batchStatusMsg');
+    statusEl.textContent = '正在停止（等待进行中的请求返回，进度已实时保存）……';
+    statusEl.className = 'status-msg';
+  }
+});
+
+document.getElementById('batchParseBtn').addEventListener('click', async () => {
+  if (batchRunning) return;
+  const statusEl = document.getElementById('batchStatusMsg');
+  const raw = document.getElementById('batchRawText').value.trim();
+  if (!raw) { statusEl.textContent = '请先粘贴文本'; statusEl.className = 'status-msg error'; return; }
+  if (!aiConfig.apiKey) { statusEl.textContent = '请先在「设置」中配置API Key'; statusEl.className = 'status-msg error'; return; }
+  const parseBtn = document.getElementById('batchParseBtn');
+  const stopBtn = document.getElementById('batchStopBtn');
+  const progressWrap = document.getElementById('batchProgressWrap');
+  const retryBtn = document.getElementById('batchRetryBtn');
+  const setStat = (t) => { statusEl.textContent = t; statusEl.className = 'status-msg'; };
+  batchRunning = true;
+  batchAbortFlag = false;
+  parseBtn.disabled = true;
+  stopBtn.style.display = '';
+  document.getElementById('batchResumeBar').style.display = 'none';
+  retryBtn.style.display = 'none';
+  progressWrap.classList.add('show');
+  requestNotifyPermission();
+  try {
+    // 断点匹配：同文本且未完成（或仍有失败批）→ 续跑；否则新建
+    let cp = loadBatchCheckpoint();
+    if (!cp || cp.raw !== raw || (cp.done && !batchHasFailed(cp))) {
+      batchProg = null;
+      cp = { raw, createdAt: Date.now() };
+      const ex = extractWordsLocal(raw);
+      let words = ex.words;
+      // 阶段0.5：讲义提词
+      if (ex.proseFrags && ex.proseFrags.length) {
+        const extracted = await extractWordsFromProse(ex.proseFrags, (i, n) => {
+          setStat(`阶段0/3 讲义提取词语：${i}/${n} 批……`);
+          updateBatchBar(0, i, n);
+        });
+        const seen0 = new Set(words);
+        extracted.forEach(w => { if (!seen0.has(w)) { seen0.add(w); words.push(w); } });
+      }
+      if (!words.length) throw new Error('未识别出有效词语');
+      // 预筛：库内已有词跳过
+      const pf = prefilterWords(words);
+      cp.rawWords = words;
+      cp.freshWords = pf.fresh;
+      cp.skippedCount = pf.skipped.length;
+      cp.digest = pf.digest;
+      cp.wordCount = pf.fresh.length;
+      saveBatchCheckpoint(cp);
+    }
+    initBatchProgress(cp.wordCount);
+    const fresh = cp.freshWords || [];
+    if (!fresh.length) throw new Error('全部词语词库中已存在，无需导入');
+    // 阶段1：关系分组（并发）
+    let g1;
+    if (!cp.p1 || !cp.p1.aggregated) {
+      g1 = await runGrouping(fresh, cp.digest || [], cp, setStat);
+      cp.p1.aggregated = true;
+      cp.p1.groups = g1.groups;
+      saveBatchCheckpoint(cp);
+    } else {
+      g1 = { groups: cp.p1.groups, libMerges: cp.p1.libMerges || {} };
+    }
+    // 阶段1.5：瘦身审计（并发）
+    let g2;
+    if (!cp.p15 || !cp.p15.done) {
+      g2 = await runAudit(g1.groups, cp, setStat);
+      cp.p15 = cp.p15 || {};
+      cp.p15.done = true;
+      cp.p15.groups = g2.groups;
+      cp.p15.allLibMerges = g2.libMerges;
+      saveBatchCheckpoint(cp);
+    } else {
+      g2 = { groups: cp.p15.groups, libMerges: cp.p15.allLibMerges || {} };
+    }
+    // 阶段2：并行补全
+    const entries = buildPhase2Entries(g2.groups, g2.libMerges);
+    const run = await runPhase2Fill(entries, cp, setStat);
+    const importList = assembleImportList(entries, run.batches, run.results);
+    batchParsedResult = importList;
+    renderBatchPreview(importList);
+    document.getElementById('batchPreviewWrap').classList.add('open');
+    if (run.failedIdx.length) {
+      retryBtn.style.display = '';
+      setStat(`解析完成：共 ${importList.length} 组（${run.failedIdx.length} 批内容补全失败，可点「重试失败批次」）`);
+    } else {
+      setStat(`解析完成，共 ${importList.length} 组，请确认后导入` + (cp.skippedCount ? `（词库已有 ${cp.skippedCount} 词自动跳过）` : ''));
+    }
+    cp.done = true;
+    saveBatchCheckpoint(cp);
+    notifyBatch('批量解析完成', `共 ${importList.length} 组，请回到页面确认导入`);
+  } catch(err) {
+    statusEl.textContent = '解析中断：' + (err.message || err) + '（进度已保存，可重新点「开始解析」继续）';
+    statusEl.className = 'status-msg error';
+    notifyBatch('批量解析已中断', String(err.message || err).slice(0, 60) + '，可继续');
+  } finally {
+    batchRunning = false;
+    restoreBatchTitle();
+    parseBtn.disabled = false;
+    stopBtn.style.display = 'none';
+    progressWrap.classList.remove('show');
+  }
+});
+
+document.getElementById('batchRetryBtn').addEventListener('click', async () => {
+  if (batchRunning) return;
+  const cp = loadBatchCheckpoint();
+  if (!cp || !cp.p15 || !cp.p15.groups) { alert('断点数据缺失，请重新开始解析'); return; }
+  batchProg = null;
+  initBatchProgress(cp.wordCount);
+  const statusEl = document.getElementById('batchStatusMsg');
+  const retryBtn = document.getElementById('batchRetryBtn');
+  const progressWrap = document.getElementById('batchProgressWrap');
+  const setStat = (t) => { statusEl.textContent = t; statusEl.className = 'status-msg'; };
+  batchRunning = true;
+  batchAbortFlag = false;
+  retryBtn.disabled = true;
+  progressWrap.classList.add('show');
+  try {
+    const entries = buildPhase2Entries(cp.p15.groups, cp.p15.allLibMerges || {});
+    const run = await runPhase2Fill(entries, cp, setStat);
+    const importList = assembleImportList(entries, run.batches, run.results);
+    batchParsedResult = importList;
+    renderBatchPreview(importList);
+    if (run.failedIdx.length) {
+      retryBtn.style.display = '';
+      setStat(`仍有 ${run.failedIdx.length} 批失败，可再次点「重试失败批次」`);
+    } else {
+      retryBtn.style.display = 'none';
+      setStat(`全部批次完成，共 ${importList.length} 组，请确认后导入`);
+      notifyBatch('批量解析完成', `共 ${importList.length} 组，请回到页面确认导入`);
+    }
+  } catch(err) {
+    statusEl.textContent = '重试中断：' + (err.message || err);
+    statusEl.className = 'status-msg error';
+    retryBtn.style.display = '';
+  } finally {
+    batchRunning = false;
+    restoreBatchTitle();
+    retryBtn.disabled = false;
+    progressWrap.classList.remove('show');
+  }
+});
+
+function renderBatchPreview(list) {
+  const container = document.getElementById('batchPreviewContent');
+  if (!list || list.length === 0) {
+    container.innerHTML = '<div style="color:var(--ink-soft);font-size:13px;">未解析出有效词组</div>';
+    return;
+  }
+  // 先分类：归并入库 / 新建辨析组 / 单词语 / 跳过
+  const cats = { merge: [], fresh: [], single: [], skip: [] };
+  list.forEach(g => {
+    const termLen = normTerms(g).length;
+    const terms = (g.words || []).map(w => escapeHtml(w.term)).join(' / ');
+    let bucket, info;
+    if (!g.words || termLen === 0) {
+      bucket = 'skip'; info = '空组，将跳过';
+    } else if (termLen < 2) {
+      const r = resolveImportGroup(g);
+      if (r.action === 'skip') { bucket = 'skip'; info = '词库已存在该词语，将跳过'; }
+      else if (r.action === 'merge') { bucket = 'merge'; info = `将并入词组「${escapeHtml(normTerms(r.group).join(' / '))}」，追加 ${r.addWords.length} 个词语`; }
+      else { bucket = 'single'; info = '单词语（暂无易混词），将单独导入'; }
+    } else {
+      const r = resolveImportGroup(g);
+      if (r.action === 'skip') { bucket = 'skip'; info = '与词库已有辨析组重复（被完整包含），将跳过'; }
+      else if (r.action === 'merge') { bucket = 'merge'; info = `将与词组「${escapeHtml(normTerms(r.group).join(' / '))}」合并，追加 ${r.addWords.length} 个词语`; }
+      else { bucket = 'fresh'; info = '将新建组别'; }
+    }
+    cats[bucket].push({ terms, info, type: g.type || '' });
+  });
+  const total = list.length;
+  const stat = `<div style="display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;padding:8px 10px;background:var(--paper-raised);border:1px solid var(--rule);border-radius:8px;margin-bottom:10px;">
+    <span style="font-weight:600;">共 ${total} 组</span>
+    <span style="color:var(--jade);">并入已有词组 ${cats.merge.length}</span>
+    <span>新建辨析组 ${cats.fresh.length}</span>
+    <span style="color:var(--ink-soft);">单词语 ${cats.single.length}</span>
+    ${cats.skip.length ? `<span style="color:#b3402e;">跳过 ${cats.skip.length}</span>` : ''}
+  </div>`;
+  const section = (title, arr, accent) => arr.length ? `
+    <div style="font-size:12px;font-weight:600;color:${accent};margin:10px 0 5px;">${title}（${arr.length}）</div>
+    ${arr.map(it => `<div class="preview-group-item">
+      <div style="font-weight:bold;margin-bottom:3px;">${it.terms}
+        <span style="font-size:11px;color:var(--ink-soft);font-weight:normal;margin-left:6px;">${escapeHtml(it.type)}</span>
+      </div>
+      <div style="font-size:12px;color:${accent === 'var(--jade)' ? 'var(--jade)' : 'var(--ink-soft)'};margin-top:2px;">${it.info}</div>
+    </div>`).join('')}` : '';
+  container.innerHTML = stat
+    + section('⇩ 并入已有词组（合并）', cats.merge, 'var(--jade)')
+    + section('✚ 新建辨析组', cats.fresh, 'var(--ink)')
+    + section('◦ 单词语（暂无易混搭档）', cats.single, 'var(--ink-soft)')
+    + (cats.skip.length ? section('⊘ 跳过（重复）', cats.skip, '#b3402e') : '');
+}
+// 集合解析：决定一条待导入辨析组如何处理（优先按AI流水线的 matchTargetGroupId 归并）
+function resolveImportGroup(g) {
+  const newTerms = normTerms(g);
+  if (newTerms.length === 0) return { action: 'skip' };
+  // AI 明确指定的归并目标优先（来自分组/审计阶段的 m=L 标记）
+  if (g.matchTargetGroupId) {
+    const target = getCustomGroupById(g.matchTargetGroupId);
+    if (target) {
+      const oldTerms = normTerms(target);
+      const addWords = (g.words || []).filter(w => {
+        const t = String(w.term || '').replace(/\s+/g, '');
+        return t && !oldTerms.includes(t);
+      });
+      if (addWords.length) return { action: 'merge', group: target, addWords };
+      return { action: 'skip' };
+    }
+  }
+  // 单词语：若词库已存在该词（无论单词语组还是辨析组内）则跳过，否则允许单独导入
+  if (newTerms.length < 2) {
+    const t = newTerms[0];
+    const exists = customGroups.some(og => normTerms(og).includes(t));
+    if (exists) return { action: 'skip' };
+    return { action: 'new-single' };
+  }
+  const newSet = new Set(newTerms);
+  let coveredByOld = false;   // 新条目被某旧辨析组完整包含 → 跳过
+  let mergeTarget = null;     // 合并目标（旧辨析组）
+  let mergeRank = 0;          // 2=旧⊂新(补全) 1=有交集(取全集)
+  for (const og of customGroups) {
+    const oldTerms = normTerms(og);
+    if (oldTerms.length < 2) continue;
+    const oldSet = new Set(oldTerms);
+    let newInOld = true;
+    newSet.forEach(t => { if (!oldSet.has(t)) newInOld = false; });
+    if (newInOld) { coveredByOld = true; continue; }
+    let oldInNew = true;
+    oldSet.forEach(t => { if (!newSet.has(t)) oldInNew = false; });
+    if (oldInNew) { if (mergeRank < 2) { mergeTarget = og; mergeRank = 2; } continue; }
+    let inter = false;
+    newSet.forEach(t => { if (oldSet.has(t)) inter = true; });
+    if (inter && mergeRank < 1) { mergeTarget = og; mergeRank = 1; }
+  }
+  if (coveredByOld) return { action: 'skip' };
+  if (mergeTarget) {
+    const oldTerms = normTerms(mergeTarget);
+    const addWords = (g.words || []).filter(w => !oldTerms.includes(String(w.term || '').replace(/\s+/g, '')));
+    return { action: 'merge', group: mergeTarget, addWords };
+  }
+  return { action: 'new' };
+}
+document.getElementById('previewConfirmBtn').addEventListener('click', async () => {
+  if (!batchParsedResult || batchParsedResult.length === 0) { alert('没有可导入的内容'); return; }
+  const importType = document.getElementById('batchImportType').value;
+  const asBase = importType === 'base';
+  let addCount = 0;
+  let newCount = 0;
+  let singleNewCount = 0;
+  let skipCount = 0;
+  let mergeCount = 0;
+  // 逐条解析：按序处理，本批内先合并/新建的组会实时进入词库，后续条目自动识别
+  batchParsedResult.forEach(g => {
+    const r = resolveImportGroup(g);
+    if (r.action === 'skip') { skipCount++; return; }
+    if (r.action === 'merge') {
+      // 追加前再次过滤，确保组内不出现重复词语
+      const seenM = new Set(normTerms(r.group));
+      const addWords = (g.words || []).filter(w => {
+        const term = String(w.term || '').replace(/\s+/g, '');
+        if (!term || seenM.has(term)) return false;
+        seenM.add(term);
+        return true;
+      });
+      addWords.forEach(w => r.group.words.push(w));
+      if (addWords.length > 0) {
+        addCount += addWords.length;
+        r.group.modifiedAt = now();
+        // 合并联动：词组内容有改动，复习排期重置，明天进入复习队列
+        r.group.reviewStage = 0;
+        r.group.nextReviewDate = addDays(todayStr(), 1);
+      }
+      mergeCount++;
+      return;
+    }
+    // 新建（含单词语）：组内去重，保证词库不出现重复词语
+    const seen = new Set();
+    const words = (g.words || []).filter(w => {
+      const term = String(w.term || '').replace(/\s+/g, '');
+      if (!term || seen.has(term)) return false;
+      seen.add(term);
+      return true;
+    });
+    if (words.length === 0) { skipCount++; return; }
+    if (r.action === 'new-single') singleNewCount++;
+    const t = now();
+    customGroups.push(applyNewGroupSrs({
+      id: 'custom-' + t + '-' + Math.random().toString(36).slice(2, 6),
+      type: g.type || '实词',
+      createdAt: t,
+      modifiedAt: t,
+      isBase: asBase,
+      words: words
+    }));
+    newCount++;
+  });
+  rebuildAllGroups();
+  await persistCustomGroups();
+  renderLibrary();
+  const parts = [`新建 ${newCount} 组${singleNewCount ? '（其中单词语 ' + singleNewCount + ' 个）' : ''}`, `合并更新 ${mergeCount} 组${addCount ? '（追加 ' + addCount + ' 个词语）' : ''}`];
+  if (skipCount) parts.push(`跳过重复 ${skipCount} 组`);
+  alert(`导入完成：${parts.join('，')}${asBase ? '（已标记为基础词库，不进「最近新增/改动」）' : '（已标记为复盘新词，进入「最近新增/改动」）'}`);
+  batchModal.classList.remove('open');
+  batchParsedResult = null;
+  document.getElementById('batchRawText').value = '';
+});
+
+// 设置页：使用说明折叠
+const helpFoldHead = document.getElementById('helpFoldHead');
+const helpFoldBody = document.getElementById('helpFoldBody');
+const helpFoldIcon = document.getElementById('helpFoldIcon');
+helpFoldHead.addEventListener('click', () => {
+  const isOpen = helpFoldBody.style.display !== 'none';
+  helpFoldBody.style.display = isOpen ? 'none' : 'block';
+  helpFoldIcon.className = isOpen ? 'ti ti-chevron-down' : 'ti ti-chevron-up';
+});
+
+// ================= 设置页 =================
+document.getElementById('saveSettingsBtn').addEventListener('click', async () => {
+  saveThemeSetting();
+  await saveAiConfig();
+  saveReviewConfig();
+  const btn = document.getElementById('saveSettingsBtn');
+  btn.textContent = '已保存';
+  setTimeout(() => btn.textContent = '保存设置', 1200);
+});
+document.getElementById('toFirstBtn').addEventListener('click', () => {
+  learnState.A.index = 0;
+  learnState.B.index = 0;
+  saveLearnState();
+  renderLearning();
+  alert('两个背诵模式都已回到第一组');
+});
+document.getElementById('clearMasteredBtn').addEventListener('click', () => {
+  if (!confirm('确定清空所有背诵进度（已掌握标记）？不可恢复。')) return;
+  masteredSet.clear();
+  persistMasteredSet();
+  renderLearning();
+  alert('已清空背诵进度');
+});
+document.getElementById('clearCustomBtn').addEventListener('click', () => {
+  if (!confirm('确定清空整个词库？所有词组将被删除，不可恢复。')) return;
+  customGroups = [];
+  rebuildAllGroups();
+  persistCustomGroups();
+  renderLibrary();
+  refreshLearningList();
+  alert('已清空词库');
+});
+
+// ================= 初始化 =================
+rebuildAllGroups();
+renderLibrary();
+loadCustomGroups();
+loadMasteredSet();
+loadAiConfig();
+loadReviewConfig();
+loadThemeSetting();
+checkTimeJump();
+loadLearnState();
+updateModeUI();
+refreshLearningList();
+saveLearnState();
+</script>
+</body>
+</html>
