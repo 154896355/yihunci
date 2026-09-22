@@ -2492,10 +2492,7 @@ async function runGrouping(fresh, digest, cp, setStat) {
     : '（词库暂无可归并的组）';
   const digestTagMap = {};
   digest.forEach((d, i) => { digestTagMap['L' + (i + 1)] = d; });
-  const crossBatch = fresh.length <= 150; // 大词量时全词表会把每个请求撑大数倍、易触发限流卡死；跨批合并交给定向合并阶段
-  const crossLine = crossBatch
-    ? ('本次任务全部词语（供跨批配对参考）：\n' + fresh.join('、'))
-    : '（词数较多：本批只做批内配对，与其他批次词的合并由随后的定向合并阶段统一处理）';
+  const crossLine = '本次任务全部词语（供跨批配对参考）：\n' + fresh.join('、');
   const total = chunks.length;
 
   const tasks = chunks.map((chunkWords, ci) => async () => {
@@ -2510,7 +2507,7 @@ async function runGrouping(fresh, digest, cp, setStat) {
 2. 语义无关的词不要出现在任何 pair 里（它们会自动单独成组）。拿不准的不要输出，宁可少配。
 3. 每对 2-5 个词，词必须原样从词表中复制。
 4. 「词库已有组」中若有与本批词语构成易混关系的组，把该词写进 lib（值填对应 L 标记），不要写进 pairs——新词会归入词库的那一组。
-5. ${crossBatch ? '「本次任务其他批次的词」里若有与本批词易混的，也可以直接组成 pair（跨批配对，词面原样复制）。' : '只对本批词语配对；与其他批次词语的易混关系交由随后的定向合并阶段统一处理。'}
+5. 「本次任务其他批次的词」里若有与本批词易混的，也可以直接组成 pair（跨批配对，词面原样复制）。
 
 输出严格JSON（不要解释）：
 {"pairs":[["不谋而合","不约而同"],["南辕北辙","背道而驰"]],"lib":{"望其项背":"L3"}}
@@ -2587,76 +2584,9 @@ ${seg.join('、')}`;
   }
   cp.p1.libMerges = libMerges;
   let groups = uf.groups().map(terms => ({ type: inferType(terms), terms })).filter(g => g.terms.length);
-  // 跨批定向合并：大词量时分组阶段无跨批视野，用组代表清单找"该合并的组对"
-  if (fresh.length > 150) {
-    const nCross = Math.ceil(groups.length / 200);
-    const totalUnits = chunks.length + nCross;
-    groups = await runCrossMerge(groups, cp, setStat, chunks.length, totalUnits);
-  }
   return { groups, libMerges };
 }
 
-// —— 跨批定向合并：每片200个小组，AI输出"该合并的组对"，本地并查集执行 ——
-async function runCrossMerge(groups, cp, setStat, startUnit, totalUnits) {
-  const slices = [];
-  for (let i = 0; i < groups.length; i += 200) slices.push(groups.slice(i, i + 200));
-  const uf = makeUF();
-  groups.forEach((g, i) => uf.add('g' + i));
-  for (let si = 0; si < slices.length; si++) {
-    if (batchAbortFlag) throw new Error('已停止');
-    setStat(`阶段1/3 跨批定向合并：第 ${si + 1}/${slices.length} 轮……`);
-    updateBatchBar(1, startUnit + si, totalUnits);
-    const lines = slices[si].map((g, k) => 'G' + (k + 1) + '：' + g.terms.join('/')).join('\n');
-    const sys = `你是公考行测言语理解「逻辑填空」易混词辨析专家。下面 ${slices[si].length} 个小组是分批自动分组产生的，批次之间互相看不见，可能存在：同一考点的词被拆进了不同小组。
-
-任务：找出应当合并的小组对。规则：
-1. 只在「确实属于同一考点、做题时可以互相作为混淆选项」的小组之间输出合并关系。
-2. 每项 ["G3","G8"] 表示 G3 和 G8 应合并为一个考点组；三个组同考点可写 ["G3","G8","G15"]。
-3. 拿不准的不要输出；语义无关的绝不硬配；宁可少输出也不要错配。
-4. 组标记必须原样引用（如 G3）。
-
-输出严格JSON（不要解释）：
-{"merges":[["G1","G7"]]}
-没有需要合并的输出 {"merges":[]}。
-
-小组清单：
-${lines}`;
-    let res = null;
-    let lastErr = null;
-    for (let a = 0; a < 2; a++) {
-      if (batchAbortFlag) throw new Error('已停止');
-      try {
-        res = await callAiOnce(sys, { maxTokens: 4096, temperature: 0.2 });
-        lastErr = null;
-        break;
-      } catch (e) {
-        if (String(e.message || e).includes('内容安全过滤') || String(e.message || e).includes('截断') || String(e.message || e).includes('空内容')) { setStat('定向合并一轮触发内容过滤/持续截断，跳过该轮'); res = null; lastErr = null; break; }
-        lastErr = e;
-      }
-    }
-    if (lastErr) throw lastErr;
-    if (!res) continue;
-    const idxOf = (tag) => {
-      const m = /^G(\d+)$/.exec(String(tag || '').trim());
-      if (!m) return -1;
-      const k = parseInt(m[1], 10);
-      return (k >= 1 && k <= slices[si].length) ? si * 200 + k - 1 : -1;
-    };
-    (Array.isArray(res.merges) ? res.merges : []).forEach(pair => {
-      const idxs = (Array.isArray(pair) ? pair : []).map(idxOf).filter(i => i >= 0);
-      for (let i = 1; i < idxs.length; i++) uf.union('g' + idxs[0], 'g' + idxs[i]);
-    });
-    updateBatchBar(1, startUnit + si + 1, totalUnits);
-  }
-  const merged = uf.groups().map(nodes => {
-    const terms = [];
-    nodes.forEach(n => { groups[parseInt(n.slice(1), 10)].terms.forEach(t => { if (!terms.includes(t)) terms.push(t); }); });
-    return { type: inferType(terms), terms };
-  });
-  return merged;
-}
-
-// —— 阶段1.5：瘦身审计（只审单词语/2词组；并发3；输出merge关系对） ——
 async function runAudit(groups, cp, setStat) {
   cp.p15 = cp.p15 || { sliceResults: {}, libMerges2: {} };
   const multi = groups.filter(g => g.terms.length >= 3);
@@ -2799,6 +2729,7 @@ keyPoint 合格示范（照这个水准写）：
 ${listing}`;
   return await callAiOnce(sys, { maxTokens: Math.max(4096, Math.min(8192, wordCount * 260 + 2500)), temperature: 0.3 });
 }
+
 
 async function runPhase2Fill(entries, cp, setStat) {
   const batches = buildPhase2Batches(entries);
@@ -3063,7 +2994,7 @@ document.getElementById('batchParseBtn').addEventListener('click', async () => {
     initBatchProgress(cp.wordCount);
     const fresh = cp.freshWords || [];
     if (!fresh.length) throw new Error('全部词语词库中已存在，无需导入');
-    // 阶段1：关系分组（并发 + 跨批定向合并）
+    // 阶段1：关系分组（并发）
     let g1;
     if (!cp.p1 || !cp.p1.crossMerged) {
       g1 = await runGrouping(fresh, cp.digest || [], cp, setStat);
