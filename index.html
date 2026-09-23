@@ -864,36 +864,10 @@
         <label>模型名称</label>
         <input type="text" id="apiModelInput" value="glm-5.3-flash" />
       </div>
-      <div class="form-row-duo">
-        <div class="form-row">
-          <label>max_tokens</label>
-          <input type="number" id="apiMaxTokensInput" value="4096" min="100" step="1" />
-        </div>
-        <div class="form-row">
-          <label>分组阶段每批词语数</label>
-          <input type="number" id="apiChunkSizeInput" value="80" min="20" step="1" />
-        </div>
-      </div>
-      <div class="form-row">
-        <label>自定义附加请求参数（可选，JSON格式）</label>
-        <textarea id="apiExtraParamsInput" style="min-height:52px;" placeholder='需要附加到请求体的字段，如：{"thinking":{"type":"enabled"},"reasoning_effort":"max"}'></textarea>
-      </div>
       <div class="form-actions">
         <button class="btn-primary" id="saveSettingsBtn">保存设置</button>
       </div>
-      <div class="help-fold">
-        <div class="help-fold-head" id="helpFoldHead">
-          <span>使用说明</span>
-          <i class="ti ti-chevron-down" id="helpFoldIcon"></i>
-        </div>
-        <div class="help-fold-body" id="helpFoldBody" style="display:none;">
-          <p class="settings-tip">密钥保存在本机浏览器，不会上传。默认适配智谱开放平台接口，其他支持OpenAI格式的接口（如DeepSeek）也可修改地址使用。<br>
-          max_tokens 是AI单次回答的长度上限（含思考模型的思考消耗）：建议保持4096以上，接口报 token 超限错误就调小。批量解析已改为两阶段流水线（全局分组→分批补全），每批自动留足余量并支持断点续传。「分组阶段每批词语数」控制分组阶段的批次大小，词越多分组越准但单次请求越大。自定义附加参数用于适配需要特殊字段的模型，不填则不影响。<br>
-          注意：使用本工具需要能联网访问大模型接口的浏览器环境。</p>
-        </div>
-      </div>
-    </div>
-    <div class="settings-section">
+      <div class="settings-section">
       <h3>学习管理</h3>
       <div class="form-row" style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
         <input type="checkbox" id="autoEnrollReview" style="width:18px;height:18px;flex-shrink:0;">
@@ -1037,7 +1011,6 @@
       </select>
     </div>
     <div class="form-row">
-      <label><input type="checkbox" id="filterMastered" style="width:auto;"> 只背未掌握的</label>
     </div>
     <p class="settings-tip">更改筛选后会重新生成背诵列表，当前位置回到第 1 组。</p>
     <div class="form-actions">
@@ -1425,9 +1398,6 @@ async function loadAiConfig() {
       apiKeyInput.value = aiConfig.apiKey || '';
       apiUrlInput.value = aiConfig.apiUrl || '';
       apiModelInput.value = aiConfig.model || '';
-      apiMaxTokensInput.value = aiConfig.maxTokens || 4096;
-      apiExtraParamsInput.value = aiConfig.extraParams || '';
-      apiChunkSizeInput.value = aiConfig.chunkSize || 80;
     }
   } catch(e) {}
 }
@@ -1435,11 +1405,6 @@ async function saveAiConfig() {
   aiConfig.apiKey = document.getElementById('apiKeyInput').value.trim();
   aiConfig.apiUrl = document.getElementById('apiUrlInput').value.trim();
   aiConfig.model = document.getElementById('apiModelInput').value.trim();
-  const mt = parseInt(document.getElementById('apiMaxTokensInput').value, 10);
-  aiConfig.maxTokens = (isFinite(mt) && mt >= 100) ? mt : 4096;
-  aiConfig.extraParams = document.getElementById('apiExtraParamsInput').value.trim();
-  const cs = parseInt(document.getElementById('apiChunkSizeInput').value, 10);
-  aiConfig.chunkSize = (isFinite(cs) && cs >= 20) ? cs : 80;
   localStorage.setItem('ai:config', JSON.stringify(aiConfig));
 }
 function loadLearnState() {
@@ -1664,19 +1629,19 @@ reviewRefreshBtn.addEventListener('click', () => {
 function typeOk(g, type) {
   return type === '全部' || g.type === type;
 }
-function masteredOk(g, onlyUnmastered) {
-  return !onlyUnmastered || !isGroupAllMastered(g.id);
+function masteredOk(g) {
+  return !isGroupAllMastered(g.id);
 }
 function buildSnapshot(mode) {
   const st = learnState[mode];
   let groups;
   if (mode === 'A') {
     // 完整词库：全部词组按拼音排序（allGroups已排序）
-    groups = allGroups.filter(g => typeOk(g, st.filterType) && masteredOk(g, st.filterMastered));
+    groups = allGroups.filter(g => typeOk(g, st.filterType) && masteredOk(g));
   } else {
     // 最近新增/改动：只取复盘词（非基础词），按 modifiedAt（无则 createdAt）倒序，最新在前
     groups = customGroups
-      .filter(g => g.isBase !== true && typeOk(g, st.filterType) && masteredOk(g, st.filterMastered))
+      .filter(g => g.isBase !== true && typeOk(g, st.filterType) && masteredOk(g))
       .sort((a, b) => ((b.modifiedAt || b.createdAt || 0)) - ((a.modifiedAt || a.createdAt || 0)));
   }
   st.snapshot = groups.map(g => g.id);
@@ -1807,6 +1772,9 @@ masterBtn.addEventListener('click', () => {
   }
   persistMasteredSet();
   persistCustomGroups();
+  const stL = learnState[learnState.mode];
+  stL.snapshot = stL.snapshot.filter(id => id !== g.id);
+  if (stL.index >= stL.snapshot.length) stL.index = Math.max(0, stL.snapshot.length - 1);
   renderLearning();
 });
 
@@ -1823,14 +1791,12 @@ learningRefreshBtn.addEventListener('click', () => {
 learningFilterBtn.addEventListener('click', () => {
   const st = learnState[learnState.mode];
   document.getElementById('filterType').value = st.filterType;
-  document.getElementById('filterMastered').checked = st.filterMastered;
   filterModal.classList.add('open');
 });
 document.getElementById('filterCancelBtn').addEventListener('click', () => filterModal.classList.remove('open'));
 document.getElementById('filterConfirmBtn').addEventListener('click', () => {
   const st = learnState[learnState.mode];
   st.filterType = document.getElementById('filterType').value;
-  st.filterMastered = document.getElementById('filterMastered').checked;
   buildSnapshot(learnState.mode);
   filterModal.classList.remove('open');
   renderLearning();
@@ -2328,10 +2294,6 @@ async function callAiOnce(systemPrompt, opts) {
     response_format: { type: 'json_object' },
     max_tokens: opts.maxTokens || 4096
   };
-  if (aiConfig.extraParams) {
-    try { Object.assign(body, JSON.parse(aiConfig.extraParams)); }
-    catch(e) { throw new Error('自定义附加请求参数不是合法JSON，请到「设置」检查'); }
-  }
   const doFetch = () => {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 300000);
@@ -2482,7 +2444,7 @@ function prefilterWords(words) {
 
 // —— 阶段1：关系对分组（并发3 + 跨批词表视图） ——
 async function runGrouping(fresh, digest, cp, setStat) {
-  const chunkSize = Math.min(40, Math.max(20, aiConfig.chunkSize || 80));
+  const chunkSize = 40;
   const chunks = [];
   for (let i = 0; i < fresh.length; i += chunkSize) chunks.push(fresh.slice(i, i + chunkSize));
   cp.p1 = cp.p1 || { chunkResults: {}, libMerges: {} };
@@ -3004,9 +2966,12 @@ document.getElementById('batchParseBtn').addEventListener('click', async () => {
     } else {
       g1 = { groups: cp.p1.groups, libMerges: cp.p1.libMerges || {} };
     }
-    // 阶段1.5：瘦身审计（并发）
+    // 阶段1.5：瘦身审计（仅多批需要；单批小导入跳过提速）
     let g2;
-    if (!cp.p15 || !cp.p15.done) {
+    if (fresh.length <= 40) {
+      g2 = { groups: g1.groups, libMerges: g1.libMerges };
+      setStat('单批导入，跳过审计阶段');
+    } else if (!cp.p15 || !cp.p15.done) {
       g2 = await runAudit(g1.groups, cp, setStat);
       cp.p15 = cp.p15 || {};
       cp.p15.done = true;
@@ -3250,14 +3215,7 @@ document.getElementById('previewConfirmBtn').addEventListener('click', async () 
 });
 
 // 设置页：使用说明折叠
-const helpFoldHead = document.getElementById('helpFoldHead');
-const helpFoldBody = document.getElementById('helpFoldBody');
-const helpFoldIcon = document.getElementById('helpFoldIcon');
-helpFoldHead.addEventListener('click', () => {
-  const isOpen = helpFoldBody.style.display !== 'none';
-  helpFoldBody.style.display = isOpen ? 'none' : 'block';
-  helpFoldIcon.className = isOpen ? 'ti ti-chevron-down' : 'ti ti-chevron-up';
-});
+
 
 // ================= 设置页 =================
 document.getElementById('saveSettingsBtn').addEventListener('click', async () => {
